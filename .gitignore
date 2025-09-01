@@ -1,1 +1,339 @@
+# ===========================================
+# 智诊通系统 .gitignore 配置文件
+# ===========================================
+
+# ===== 系统文件 =====
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# ===== Python 后端相关 =====
+# 字节码文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 分发/打包
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# 单元测试 / 覆盖率报告
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ===== Node.js / Vue.js 前端相关 =====
+# 依赖
+node_modules/
+jspm_packages/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Rollup.js default build output
+dist/
+
+# Uncomment if using Vercel
+# .vercel
+
+# ===== Vue.js 特定文件 =====
+# Vue自动生成的类型声明文件
+*.d.ts
+!src/**/*.d.ts
+!*.d.ts
+
+# ===== 日志文件 =====
+logs/
+*.log
+log/
+*.log.*
+
+# ===== 上传文件 =====
+uploads/
+upload/
+files/
+media/
+
+# ===== 数据库文件 =====
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== 缓存文件 =====
+.cache/
+cache/
+tmp/
+temp/
+
+# ===== Docker 相关 =====
+# Docker Compose 覆盖文件
+docker-compose.override.yml
+docker-compose.*.yml
+!docker-compose.yml
+
+# ===== IDE 和编辑器 =====
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ===== 进程ID文件 =====
+*.pid
+.*.pid
+
+# ===== 备份文件 =====
+*.bak
+*.backup
+*.swp
+*.tmp
+
+# ===== 配置文件 (敏感信息) =====
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 数据库配置
+database.ini
+db.ini
+
+# API密钥
+secrets.json
+config/secrets.json
+
+# ===== AI模型文件 (通常很大) =====
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pkl
+*.joblib
+*.model
+models/
+checkpoints/
+
+# ===== 数据文件 =====
+# 大型数据集
+data/
+dataset/
+datasets/
+*.csv
+*.tsv
+*.json
+!package*.json
+!tsconfig*.json
+!*config*.json
+
+# 图片和媒体文件 (如果很大的话)
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.mp4
+# *.avi
+# *.mov
+
+# ===== 压缩文件 =====
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ===== 测试和文档临时文件 =====
+test-results/
+coverage/
+docs/build/
+
+# ===== 其他 =====
+# 系统生成的文件
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# 临时文件
+*.tmp
+*.temp
