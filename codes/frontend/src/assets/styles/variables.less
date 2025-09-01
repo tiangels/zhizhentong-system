@@ -1,0 +1,341 @@
+// 智诊通前端系统样式变量
+// 定义全局样式变量和主题配置
+
+// ==================== 颜色系统 ====================
+
+// 主色调
+@primary-color: #1890ff;
+@primary-color-hover: #40a9ff;
+@primary-color-active: #096dd9;
+@primary-color-outline: rgba(24, 144, 255, 0.2);
+@primary-color-light: #e6f7ff;
+
+// 辅助色
+@success-color: #52c41a;
+@warning-color: #faad14;
+@error-color: #f5222d;
+@info-color: #1890ff;
+
+// 中性色
+@text-color: rgba(0, 0, 0, 0.85);
+@text-color-secondary: rgba(0, 0, 0, 0.65);
+@text-color-disabled: rgba(0, 0, 0, 0.25);
+@border-color-base: #d9d9d9;
+@border-color-split: #f0f0f0;
+@background-color-light: #fafafa;
+@background-color-base: #f5f5f5;
+
+// 背景色
+@bg-color: #ffffff;
+@bg-color-light: #fafafa;
+@bg-color-dark: #f0f0f0;
+
+// 链接颜色
+@link-color: @primary-color;
+@link-hover-color: @primary-color-hover;
+@link-active-color: @primary-color-active;
+
+// 占位符颜色
+@placeholder-color: @text-color-disabled;
+
+// 滚动条颜色
+@scrollbar-track-color: #f1f1f1;
+@scrollbar-thumb-color: #c1c1c1;
+@scrollbar-thumb-hover-color: #a8a8a8;
+
+// 过渡动画
+@transition-duration: 0.3s;
+@transition-timing: ease-in-out;
+
+// 阴影颜色
+@shadow-color: rgba(0, 0, 0, 0.15);
+
+// 深色主题颜色
+@dark-bg-color: #141414;
+@dark-bg-color-light: #1f1f1f;
+@dark-text-color: rgba(255, 255, 255, 0.85);
+@dark-text-color-secondary: rgba(255, 255, 255, 0.65);
+@dark-border-color: #434343;
+
+// 深色主题变量别名
+@bg-color-dark: @dark-bg-color;
+@text-color-dark: @dark-text-color;
+@border-color-dark: @dark-border-color;
+@shadow-color-dark: rgba(0, 0, 0, 0.3);
+
+// ==================== 字体系统 ====================
+
+// 字体族
+@font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+@font-family-code: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+
+// 字体大小
+@font-size-base: 14px;
+@font-size-lg: 16px;
+@font-size-sm: 12px;
+@font-size-xs: 10px;
+@font-size-xl: 18px;
+@font-size-2xl: 24px;
+
+// 字体权重
+@font-weight-light: 300;
+@font-weight-normal: 400;
+@font-weight-medium: 500;
+@font-weight-semibold: 600;
+@font-weight-bold: 700;
+
+// 行高
+@line-height-base: 1.5715;
+@line-height-lg: 1.5;
+@line-height-sm: 1.66667;
+
+// ==================== 间距系统 ====================
+
+// 基础间距单位
+@spacing-unit: 8px;
+
+// 间距变量
+@spacing-xs: @spacing-unit * 0.5;    // 4px
+@spacing-sm: @spacing-unit;          // 8px
+@spacing-md: @spacing-unit * 1.5;    // 12px
+@spacing-lg: @spacing-unit * 2;      // 16px
+@spacing-xl: @spacing-unit * 3;      // 24px
+@spacing-xxl: @spacing-unit * 4;     // 32px
+
+// 内边距
+@padding-xs: @spacing-xs;
+@padding-sm: @spacing-sm;
+@padding-md: @spacing-md;
+@padding-lg: @spacing-lg;
+@padding-xl: @spacing-xl;
+
+// 外边距
+@margin-xs: @spacing-xs;
+@margin-sm: @spacing-sm;
+@margin-md: @spacing-md;
+@margin-lg: @spacing-lg;
+@margin-xl: @spacing-xl;
+
+// ==================== 边框系统 ====================
+
+// 边框宽度
+@border-width-base: 1px;
+@border-width-sm: 1px;
+@border-width-lg: 2px;
+
+// 边框样式
+@border-style-base: solid;
+@border-style-dashed: dashed;
+
+// 圆角
+@border-radius-base: 6px;
+@border-radius-sm: 4px;
+@border-radius-lg: 8px;
+@border-radius-xl: 12px;
+@border-radius-circle: 50%;
+
+// 边框颜色
+@border-color: @border-color-base;
+
+// ==================== 阴影系统 ====================
+
+// 基础阴影
+@box-shadow-base: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+@box-shadow-card: 0 1px 2px -2px rgba(0, 0, 0, 0.16), 0 3px 6px 0 rgba(0, 0, 0, 0.12), 0 5px 12px 4px rgba(0, 0, 0, 0.09);
+@box-shadow-dropdown: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+@box-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+@box-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+// ==================== 断点系统 ====================
+
+// 响应式断点
+@screen-xs: 480px;
+@screen-sm: 576px;
+@screen-md: 768px;
+@screen-lg: 992px;
+@screen-xl: 1200px;
+@screen-xxl: 1600px;
+
+// 媒体查询
+@screen-xs-min: @screen-xs;
+@screen-sm-min: @screen-sm;
+@screen-md-min: @screen-md;
+@screen-lg-min: @screen-lg;
+@screen-xl-min: @screen-xl;
+@screen-xxl-min: @screen-xxl;
+
+@screen-xs-max: (@screen-sm-min - 1px);
+@screen-sm-max: (@screen-md-min - 1px);
+@screen-md-max: (@screen-lg-min - 1px);
+@screen-lg-max: (@screen-xl-min - 1px);
+@screen-xl-max: (@screen-xxl-min - 1px);
+
+// ==================== 动画系统 ====================
+
+// 动画时长
+@animation-duration-base: 0.2s;
+@animation-duration-fast: 0.1s;
+@animation-duration-slow: 0.3s;
+
+// 缓动函数
+@ease-base-out: cubic-bezier(0.7, 0.3, 0.1, 1);
+@ease-base-in: cubic-bezier(0.9, 0, 0.3, 0.7);
+@ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+@ease-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+@ease-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+@ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+@ease-in-back: cubic-bezier(0.6, -0.28, 0.735, 0.045);
+@ease-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+// ==================== Z-index系统 ====================
+
+// Z-index层级
+@zindex-badge: 10;
+@zindex-table-fixed: 20;
+@zindex-affix: 30;
+@zindex-back-top: 40;
+@zindex-picker-panel: 50;
+@zindex-popup-close: 60;
+@zindex-modal: 1000;
+@zindex-modal-mask: 1000;
+@zindex-message: 1010;
+@zindex-notification: 1010;
+@zindex-popover: 1030;
+@zindex-dropdown: 1050;
+@zindex-picker: 1050;
+@zindex-popoconfirm: 1060;
+@zindex-tooltip: 1070;
+@zindex-image: 1080;
+
+// ==================== 布局系统 ====================
+
+// 布局相关
+@layout-header-height: 64px;
+@layout-header-padding: 0 @spacing-lg;
+@layout-footer-padding: @spacing-lg @spacing-lg;
+@layout-body-background: #f0f2f5;
+@layout-header-background: #fff;
+@layout-footer-background: @layout-body-background;
+@layout-sider-background: #001529;
+@layout-trigger-height: 48px;
+@layout-trigger-background: #002140;
+@layout-trigger-color: #fff;
+@layout-zero-trigger-width: 36px;
+@layout-zero-trigger-height: 42px;
+
+// 内容区域
+@content-padding: @spacing-lg;
+@content-max-width: 1200px;
+
+// 容器尺寸
+@container-sm: 540px;
+@container-md: 720px;
+@container-lg: 960px;
+@container-xl: 1140px;
+
+// 组件背景色
+@card-bg: #ffffff;
+@header-bg: #ffffff;
+@footer-bg: #f5f5f5;
+
+// ==================== 组件特定变量 ====================
+
+// 按钮
+@btn-height-base: 32px;
+@btn-height-lg: 40px;
+@btn-height-sm: 24px;
+@btn-padding-horizontal-base: @spacing-md;
+@btn-padding-horizontal-lg: @spacing-lg;
+@btn-padding-horizontal-sm: @spacing-sm;
+
+// 输入框
+@input-height-base: 32px;
+@input-height-lg: 40px;
+@input-height-sm: 24px;
+@input-padding-horizontal-base: @spacing-sm;
+@input-padding-horizontal-lg: @spacing-md;
+@input-padding-horizontal-sm: @spacing-xs;
+
+// 卡片
+@card-head-padding: @spacing-lg;
+@card-head-padding-sm: @spacing-md;
+@card-inner-head-padding: @spacing-md;
+@card-padding-base: @spacing-lg;
+@card-padding-base-sm: @spacing-md;
+
+// 表格
+@table-header-bg: #fafafa;
+@table-header-color: @text-color;
+@table-row-hover-bg: #f5f5f5;
+@table-selected-row-bg: #e6f7ff;
+@table-expanded-row-bg: #fbfbfb;
+
+// 消息
+@message-notice-content-padding: 10px @spacing-lg;
+@message-notice-content-bg: #fff;
+
+// 通知
+@notification-bg: #fff;
+@notification-padding: @spacing-lg;
+
+// ==================== 业务特定变量 ====================
+
+// 聊天相关
+@chat-message-padding: @spacing-md;
+@chat-message-border-radius: @border-radius-lg;
+@chat-input-height: 120px;
+@chat-sidebar-width: 280px;
+@chat-sidebar-collapsed-width: 80px;
+
+// 医疗相关
+@medical-primary-color: #52c41a;
+@medical-warning-color: #faad14;
+@medical-danger-color: #f5222d;
+@medical-info-color: #1890ff;
+
+// 状态颜色
+@status-success: @success-color;
+@status-warning: @warning-color;
+@status-error: @error-color;
+@status-info: @info-color;
+@status-processing: @primary-color;
+
+// ==================== 工具类变量 ====================
+
+// 文本对齐
+@text-align-left: left;
+@text-align-center: center;
+@text-align-right: right;
+@text-align-justify: justify;
+
+// 文本装饰
+@text-decoration-none: none;
+@text-decoration-underline: underline;
+@text-decoration-line-through: line-through;
+
+// 文本转换
+@text-transform-none: none;
+@text-transform-uppercase: uppercase;
+@text-transform-lowercase: lowercase;
+@text-transform-capitalize: capitalize;
+
+// 显示类型
+@display-none: none;
+@display-block: block;
+@display-inline: inline;
+@display-inline-block: inline-block;
+@display-flex: flex;
+@display-inline-flex: inline-flex;
+
+// 定位
+@position-static: static;
+@position-relative: relative;
+@position-absolute: absolute;
+@position-fixed: fixed;
+@position-sticky: sticky;
+
+// 溢出
+@overflow-visible: visible;
+@overflow-hidden: hidden;
+@overflow-scroll: scroll;
+@overflow-auto: auto;

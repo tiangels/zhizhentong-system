@@ -1,0 +1,138 @@
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:14-alpine
+    container_name: zhizhentong_postgres
+    environment:
+      POSTGRES_DB: zhizhentong
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zhizhentong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存服务
+  redis:
+    image: redis:6-alpine
+    container_name: zhizhentong_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Milvus 向量数据库服务（暂时注释掉）
+  # milvus-standalone:
+  #   image: milvusdb/milvus:v2.3.3
+  #   container_name: zhizhentong_milvus
+  #   environment:
+  #     ETCD_USE_EMBED: "true"
+  #     ETCD_DATA_DIR: /var/lib/milvus/etcd
+  #     ETCD_CONFIG_PATH: /milvus/configs/etcd.yaml
+  #     MINIO_ADDRESS: localhost:9000
+  #     MINIO_ACCESS_KEY: minioadmin
+  #     MINIO_SECRET_KEY: minioadmin
+  #     MINIO_USE_SSL: "false"
+  #     MINIO_BUCKET_NAME: milvus
+  #     COMMON_STORAGETYPE: local
+  #     COMMON_STORAGEPATH: /var/lib/milvus
+  #   volumes:
+  #     - milvus_data:/var/lib/milvus
+  #   ports:
+  #     - "19530:19530"
+  #     - "9091:9091"
+  #   networks:
+  #     - zhizhentong_network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 60s
+
+  # RabbitMQ 消息队列服务
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: zhizhentong_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: zhizhentong
+      RABBITMQ_DEFAULT_PASS: zhizhentong123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端API服务
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zhizhentong_backend
+    environment:
+      - DATABASE_URL=postgresql://zhizhentong:zhizhentong123@postgres:5432/zhizhentong
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://zhizhentong:zhizhentong123@rabbitmq:5672/
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+      - VECTOR_DB_TYPE=none
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+  redis_data:
+  # milvus_data:
+  rabbitmq_data:
+
+networks:
+  zhizhentong_network:
+    driver: bridge

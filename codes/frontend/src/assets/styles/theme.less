@@ -1,0 +1,143 @@
+/**
+ * 主题切换样式
+ * 支持深色和浅色主题切换
+ */
+
+// ==================== 浅色主题（默认） ====================
+:root[data-theme="light"] {
+  // 背景色
+  --bg-color: #ffffff;
+  --bg-color-light: #fafafa;
+  --bg-color-dark: #f0f0f0;
+  --header-bg: #ffffff;
+  
+  // 文本色
+  --text-color: rgba(0, 0, 0, 0.85);
+  --text-color-secondary: rgba(0, 0, 0, 0.65);
+  --text-color-disabled: rgba(0, 0, 0, 0.25);
+  
+  // 边框色
+  --border-color: #d9d9d9;
+  --border-color-split: #f0f0f0;
+  
+  // 阴影
+  --shadow-color: rgba(0, 0, 0, 0.15);
+  --box-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --box-shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --box-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  // 滚动条
+  --scrollbar-track-color: #f1f1f1;
+  --scrollbar-thumb-color: #c1c1c1;
+  --scrollbar-thumb-hover-color: #a8a8a8;
+}
+
+// ==================== 深色主题 ====================
+:root[data-theme="dark"] {
+  // 背景色
+  --bg-color: #141414;
+  --bg-color-light: #1f1f1f;
+  --bg-color-dark: #262626;
+  --header-bg: #1f1f1f;
+  
+  // 文本色
+  --text-color: rgba(255, 255, 255, 0.85);
+  --text-color-secondary: rgba(255, 255, 255, 0.65);
+  --text-color-disabled: rgba(255, 255, 255, 0.25);
+  
+  // 边框色
+  --border-color: #434343;
+  --border-color-split: #303030;
+  
+  // 阴影
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --box-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --box-shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --box-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  
+  // 滚动条
+  --scrollbar-track-color: #2a2a2a;
+  --scrollbar-thumb-color: #555555;
+  --scrollbar-thumb-hover-color: #777777;
+}
+
+// ==================== 应用主题变量 ====================
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+// 聊天窗口主题适配
+.chat-window {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.chat-messages {
+  background-color: var(--bg-color);
+}
+
+.message-item {
+  border-bottom: 1px solid var(--border-color-split);
+}
+
+.message-content {
+  color: var(--text-color);
+}
+
+.message-time {
+  color: var(--text-color-secondary);
+}
+
+// 输入框主题适配
+.chat-input {
+  background-color: var(--bg-color-light);
+  border-top: 1px solid var(--border-color);
+}
+
+// 对话历史主题适配
+.chat-history {
+  background-color: var(--bg-color-light);
+  border-right: 1px solid var(--border-color);
+}
+
+.conversation-title {
+  color: var(--text-color);
+}
+
+.conversation-preview {
+  color: var(--text-color-secondary);
+}
+
+.conversation-time {
+  color: var(--text-color-secondary);
+}
+
+// 头部主题适配
+.chat-header {
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--box-shadow-sm);
+}
+
+.chat-title {
+  color: var(--text-color);
+}
+
+.chat-subtitle {
+  color: var(--text-color-secondary);
+}
+
+// 滚动条主题适配
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+  
+  &:hover {
+    background: var(--scrollbar-thumb-hover-color);
+  }
+}
