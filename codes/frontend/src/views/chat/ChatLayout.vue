@@ -16,7 +16,7 @@ const toggleTheme = () => {
   uiStore.toggleTheme()
 }
 
-const handleLogout = async() => {
+const handleLogout = async () => {
   try {
     await authStore.logout()
     message.success('已退出登录')

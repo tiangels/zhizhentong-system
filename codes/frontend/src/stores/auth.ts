@@ -43,18 +43,12 @@ export const useAuthStore = defineStore('auth', () => {
   const hasRole = computed(() => (role: UserRole) => user.value?.roles?.includes(role) || false)
 
   // 登录
-  const login = async(credentials: LoginRequest) => {
-    console.log('Auth store - 开始登录:', credentials)
+  const login = async (credentials: LoginRequest) => {
+    console.log('🔐 Auth store - 登录:', credentials.username)
 
     try {
       isLoading.value = true
       error.value = null
-
-      console.log('Auth store - 调用真实API服务...')
-      console.log(
-        'Auth store - API基础URL:',
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
-      )
 
       // 调用真实的后端API
       const response = await authApi.login({
@@ -62,7 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
         password: credentials.password,
       })
 
-      console.log('Auth store - API响应:', response)
+      console.log('🔐 Auth store - API响应成功')
 
       // API服务已经将后端响应转换为包装格式
       if (response && response.success && response.data) {
@@ -80,7 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
         console.log('Auth store - 登录成功，用户信息:', userData)
         console.log('Auth store - 当前登录状态:', isAuthenticated.value)
         console.log('Auth store - isLoggedIn状态:', isLoggedIn.value)
-        
+
         // 初始化用户专用的 chat 数据
         try {
           const { useChatStore } = await import('@/stores/chat')
@@ -89,7 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
         } catch (chatError) {
           console.error('初始化用户 chat 数据失败:', chatError)
         }
-        
+
         return userData
       } else {
         throw new Error('登录响应格式不正确')
@@ -123,7 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 注册
-  const register = async(userData: RegisterRequest) => {
+  const register = async (userData: RegisterRequest) => {
     try {
       isLoading.value = true
       error.value = null
@@ -162,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 登出
-  const logout = async() => {
+  const logout = async () => {
     try {
       if (token.value) {
         await authApi.logout()
@@ -178,19 +172,19 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null
       token.value = null
       error.value = null
-      
+
       // 清理用户专用的 chat 数据
       try {
         const { useChatStore } = await import('@/stores/chat')
         const chatStore = useChatStore()
         chatStore.clearUserData()
-        
+
         // 同时清理localStorage中的用户数据
-        const userId = user.value?.id
+        const userId = (user.value as User | null)?.id
         if (userId) {
           const { clearUserStorage } = await import('@/utils/constants')
           clearUserStorage(userId)
-          
+
           // 清理当前对话ID
           localStorage.removeItem(`currentConversationId_${userId}`)
         }
@@ -201,7 +195,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 刷新token
-  const refreshToken = async() => {
+  const refreshToken = async () => {
     try {
       // 模拟刷新token
       const newToken = 'mock-jwt-token-' + Date.now()
@@ -215,7 +209,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 检查认证状态
-  const checkAuthStatus = async() => {
+  const checkAuthStatus = async () => {
     try {
       console.log('Auth store - 开始检查认证状态')
       console.log('Auth store - 当前token:', !!token.value)
@@ -279,7 +273,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 更新用户信息
-  const updateUserInfo = async(userData: Partial<User>) => {
+  const updateUserInfo = async (userData: Partial<User>) => {
     try {
       const response = await authApi.updateUserProfile(userData)
 

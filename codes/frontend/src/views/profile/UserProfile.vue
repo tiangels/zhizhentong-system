@@ -39,7 +39,7 @@ const startEdit = () => {
 }
 
 // 保存个人信息
-const saveProfile = async() => {
+const saveProfile = async () => {
   try {
     // 这里应该调用API更新用户信息
     // await authStore.updateProfile(profileForm)
@@ -68,7 +68,7 @@ const cancelEdit = () => {
 }
 
 // 修改密码
-const changePassword = async() => {
+const changePassword = async () => {
   try {
     // 验证密码
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -114,7 +114,7 @@ const formatDate = (timestamp?: string) => {
 }
 
 // 加载用户统计
-const loadUserStats = async() => {
+const loadUserStats = async () => {
   try {
     // 这里应该调用API获取用户统计
     // 暂时使用模拟数据
@@ -128,7 +128,7 @@ const loadUserStats = async() => {
   }
 }
 
-onMounted(async() => {
+onMounted(async () => {
   await loadUserStats()
 
   // 初始化表单数据

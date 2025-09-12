@@ -61,7 +61,7 @@ const goToChat = (chatId: string) => {
 }
 
 // 删除对话
-const deleteChat = async(chatId: string) => {
+const deleteChat = async (chatId: string) => {
   try {
     await chatStore.deleteConversation(chatId)
     // 重新加载最近对话
@@ -72,30 +72,33 @@ const deleteChat = async(chatId: string) => {
 }
 
 // 加载最近对话
-const loadRecentChats = async() => {
+const loadRecentChats = async () => {
   try {
     // 初始化用户数据，这会从本地存储加载对话
     chatStore.initializeUserData()
-    
+
     // 使用 computed 属性获取已排序的对话
     const sortedConversations = chatStore.sortedConversations
-    
+
     recentChats.value = sortedConversations.slice(0, 5) // 只显示最近5个
     console.log('仪表盘：加载最近对话:', recentChats.value.length, '个')
-    console.log('对话列表:', recentChats.value.map(conv => ({
-      id: conv.id,
-      title: conv.title,
-      type: conv.type,
-      messageCount: conv.messageCount,
-      updatedAt: conv.updatedAt
-    })))
+    console.log(
+      '对话列表:',
+      recentChats.value.map(conv => ({
+        id: conv.id,
+        title: conv.title,
+        type: conv.type,
+        messageCount: conv.messageCount,
+        updatedAt: conv.updatedAt,
+      }))
+    )
   } catch (error) {
     console.error('加载对话历史失败:', error)
   }
 }
 
 // 加载统计数据
-const loadStats = async() => {
+const loadStats = async () => {
   try {
     // 这里可以调用API获取统计数据
     // 暂时使用模拟数据
@@ -116,14 +119,14 @@ const loadStats = async() => {
 // 监听对话变化，自动更新最近对话列表
 const unwatchConversations = watch(
   () => chatStore.conversations,
-  (newConversations) => {
+  newConversations => {
     console.log('仪表盘：检测到对话变化，新对话数:', newConversations.length)
     recentChats.value = newConversations.slice(0, 5)
   },
   { deep: true, immediate: true }
 )
 
-onMounted(async() => {
+onMounted(async () => {
   await loadStats()
   await loadRecentChats()
 })
@@ -201,7 +204,9 @@ onUnmounted(() => {
                 <h4>{{ chat.title || '未命名对话' }}</h4>
                 <p>{{ chat.lastMessage || '暂无消息' }}</p>
                 <span class="chat-time">{{ formatTime(chat.updatedAt) }}</span>
-                <span class="chat-type">{{ chat.type === 'diagnosis' ? '智能问诊' : '普通对话' }}</span>
+                <span class="chat-type">{{
+                  chat.type === 'diagnosis' ? '智能问诊' : '普通对话'
+                }}</span>
               </div>
               <div class="chat-actions">
                 <button @click.stop="deleteChat(chat.id)" class="btn-delete">

@@ -12,10 +12,10 @@ import { STORAGE_KEYS } from '@/utils/constants'
 export const useUIStore = defineStore('ui', () => {
   // 状态
   const theme = ref<'light' | 'dark'>(
-    getLocalStorage<'light' | 'dark'>(STORAGE_KEYS.THEME) || 'light',
+    getLocalStorage<'light' | 'dark'>(STORAGE_KEYS.THEME) || 'light'
   )
   const sidebarCollapsed = ref<boolean>(
-    getLocalStorage<boolean>(STORAGE_KEYS.SIDEBAR_COLLAPSED) || false,
+    getLocalStorage<boolean>(STORAGE_KEYS.SIDEBAR_COLLAPSED) || false
   )
   const modalVisible = ref<boolean>(false)
   const modalType = ref<string | null>(null)

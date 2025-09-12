@@ -59,7 +59,7 @@ const rules: any = {
 }
 
 // 处理注册
-const handleRegister = async(values: RegisterRequest) => {
+const handleRegister = async (values: RegisterRequest) => {
   try {
     await authStore.register(values)
     message.success('注册成功')

@@ -1,0 +1,47 @@
+{
+  "vector_service": {
+    "device": "cpu",
+    "vector_dim": 768,
+    "batch_size": 32,
+    "text_model_path": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/codes/ai_models/llm_models/text2vec-base-chinese",
+    "image_model_path": "clip-ViT-B-32",
+    "use_knowledge_base_service": true
+  },
+  "retrieval_service": {
+    "vector_dim": 768,
+    "max_results": 20,
+    "similarity_threshold": 200.0,
+    "retrieval_strategy": "semantic",
+    "vector_db_path": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/vector_databases/multimodal",
+    "collection_name": "medical_multimodal_vectors",
+    "model_name": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/codes/ai_models/llm_models/text2vec-base-chinese"
+  },
+  "llm_service": {
+    "device": "cpu",
+    "model_path": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/codes/ai_models/llm_models/Qwen2-0.5B-Medical-MLX",
+    "max_length": 2048,
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "top_k": 50,
+    "repetition_penalty": 1.1,
+    "timeout": 600
+  },
+  "summarization_service": {
+    "device": "cpu",
+    "model_path": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/codes/ai_models/llm_models/Falconsai_text_summarization",
+    "max_length": 100,
+    "min_length": 30,
+    "num_beams": 4,
+    "temperature": 0.7,
+    "early_stopping": true,
+    "use_medical_summarization": true,
+    "medical_max_length": 50,
+    "timeout": 300
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8001,
+    "reload": true,
+    "log_level": "info"
+  }
+}

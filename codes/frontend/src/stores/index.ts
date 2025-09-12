@@ -4,7 +4,7 @@
  */
 
 export { useAuthStore } from './auth'
-export { useChatStore } from './chat'  
+export { useChatStore } from './chat'
 export { useUIStore } from './ui'
 
 // 导出类型定义

@@ -5,194 +5,139 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🔍 智诊通系统状态检查${NC}"
+echo -e "${BLUE}🔍 智真通系统状态检查${NC}"
 echo "=================================="
-echo ""
 
-# 检查后端服务状态
-echo -e "${CYAN}📋 后端服务状态:${NC}"
-if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-    echo -e "  ${GREEN}✅ 后端API服务运行正常 (端口: 8000)${NC}"
-else
-    echo -e "  ${RED}❌ 后端API服务未运行或无法访问${NC}"
-fi
-
-# 检查前端服务状态
-echo -e "${CYAN}📋 前端服务状态:${NC}"
-if curl -s http://localhost:8080 > /dev/null 2>&1; then
-    echo -e "  ${GREEN}✅ 前端服务运行正常 (端口: 8080)${NC}"
-else
-    echo -e "  ${RED}❌ 前端服务未运行或无法访问${NC}"
-fi
-
-# 检查 Docker 服务状态
-echo -e "${CYAN}📋 Docker 服务状态:${NC}"
-cd backend
-
-# 检查 Docker Compose 命令
-if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE_CMD="docker-compose"
-elif docker compose version &> /dev/null; then
-    DOCKER_COMPOSE_CMD="docker compose"
-else
-    echo -e "  ${YELLOW}⚠️  Docker Compose 未找到${NC}"
-    cd ..
-    return
-fi
-
-if $DOCKER_COMPOSE_CMD ps | grep -q "Up"; then
-    echo -e "  ${GREEN}✅ Docker 服务运行正常${NC}"
-    $DOCKER_COMPOSE_CMD ps | grep -E "(postgres|redis|rabbitmq)" | while read line; do
-        echo -e "  $line"
-    done
-else
-    echo -e "  ${YELLOW}⚠️  Docker 服务未运行${NC}"
-fi
-cd ..
-
-# 检查数据库状态
-echo -e "${CYAN}📋 PostgreSQL 数据库状态:${NC}"
-if docker exec zhizhentong_postgres pg_isready -U postgres -d zhizhentong > /dev/null 2>&1; then
-    echo -e "  ${GREEN}✅ PostgreSQL 数据库连接正常${NC}"
-else
-    echo -e "  ${RED}❌ PostgreSQL 数据库连接失败${NC}"
-fi
-
-# 检查Redis状态
-echo -e "${CYAN}📋 Redis状态:${NC}"
-if docker exec zhizhentong_redis redis-cli ping > /dev/null 2>&1; then
-    echo -e "  ${GREEN}✅ Redis服务运行正常${NC}"
-else
-    echo -e "  ${RED}❌ Redis服务未运行${NC}"
-fi
-
-# 检查Milvus状态
-echo -e "${CYAN}📋 Milvus向量数据库状态:${NC}"
-if command -v curl &> /dev/null; then
-    if curl -s http://localhost:19530/health > /dev/null 2>&1; then
-        echo -e "  ${GREEN}✅ Milvus服务运行正常 (端口: 19530)${NC}"
+# 检查后端服务
+echo -e "\n${YELLOW}📊 后端服务状态:${NC}"
+if pgrep -f "uvicorn.*main:app" > /dev/null; then
+    BACKEND_PID=$(pgrep -f "uvicorn.*main:app")
+    echo -e "  ${GREEN}✅ 后端服务运行中 (PID: $BACKEND_PID)${NC}"
+    
+    # 检查端口
+    if netstat -an 2>/dev/null | grep -q ":8000.*LISTEN" || lsof -i :8000 >/dev/null 2>&1; then
+        echo -e "  ${GREEN}✅ 端口 8000 监听正常${NC}"
     else
-        echo -e "  ${YELLOW}⚠️  Milvus服务未运行或无法访问${NC}"
+        echo -e "  ${RED}❌ 端口 8000 未监听${NC}"
+    fi
+    
+    # 测试API连接
+    if curl -s --connect-timeout 3 http://localhost:8000/health > /dev/null 2>&1; then
+        echo -e "  ${GREEN}✅ API 健康检查通过${NC}"
+    else
+        echo -e "  ${YELLOW}⚠️  API 健康检查失败${NC}"
     fi
 else
-    echo -e "  ${YELLOW}⚠️  curl命令不可用${NC}"
+    echo -e "  ${RED}❌ 后端服务未运行${NC}"
 fi
 
-# 检查RabbitMQ状态
-echo -e "${CYAN}📋 RabbitMQ状态:${NC}"
-if curl -s -u zhizhentong:zhizhentong123 http://localhost:15672/api/overview > /dev/null 2>&1; then
-    echo -e "  ${GREEN}✅ RabbitMQ服务运行正常 (端口: 5672)${NC}"
+# 检查前端服务
+echo -e "\n${YELLOW}🌐 前端服务状态:${NC}"
+if pgrep -f "npm.*dev" > /dev/null; then
+    FRONTEND_PID=$(pgrep -f "npm.*dev")
+    echo -e "  ${GREEN}✅ 前端服务运行中 (PID: $FRONTEND_PID)${NC}"
+    
+    # 检查端口
+    if netstat -an 2>/dev/null | grep -q ":8080.*LISTEN" || lsof -i :8080 >/dev/null 2>&1; then
+        echo -e "  ${GREEN}✅ 端口 8080 监听正常${NC}"
+    else
+        echo -e "  ${RED}❌ 端口 8080 未监听${NC}"
+    fi
+    
+    # 测试前端连接
+    if curl -s --connect-timeout 3 http://localhost:8080 > /dev/null 2>&1; then
+        echo -e "  ${GREEN}✅ 前端页面可访问${NC}"
+    else
+        echo -e "  ${YELLOW}⚠️  前端页面访问失败${NC}"
+    fi
 else
-    echo -e "  ${YELLOW}⚠️  RabbitMQ服务未运行或无法访问${NC}"
+    echo -e "  ${RED}❌ 前端服务未运行${NC}"
 fi
 
-# 检查端口占用情况
-echo -e "${CYAN}📋 端口占用情况:${NC}"
-echo -e "  端口 8000 (后端): $(lsof -i :8000 | wc -l | tr -d ' ') 个进程"
-echo -e "  端口 8080 (前端): $(lsof -i :8080 | wc -l | tr -d ' ') 个进程"
+# 检查数据库
+echo -e "\n${YELLOW}🗄️  数据库状态:${NC}"
+if pgrep -f "redis-server" > /dev/null; then
+    echo -e "  ${GREEN}✅ Redis 运行中${NC}"
+else
+    echo -e "  ${RED}❌ Redis 未运行${NC}"
+fi
+
+# 检查RAG服务
+echo -e "\n${YELLOW}🧠 RAG服务状态:${NC}"
+if pgrep -f "start_rag_service.py" > /dev/null; then
+    RAG_PID=$(pgrep -f "start_rag_service.py")
+    echo -e "  ${GREEN}✅ RAG服务运行中 (PID: $RAG_PID)${NC}"
+    
+    # 检查端口
+    if netstat -an 2>/dev/null | grep -q ":8001.*LISTEN" || lsof -i :8001 >/dev/null 2>&1; then
+        echo -e "  ${GREEN}✅ 端口 8001 监听正常${NC}"
+    else
+        echo -e "  ${RED}❌ 端口 8001 未监听${NC}"
+    fi
+    
+    # 测试RAG API连接
+    if curl -s --connect-timeout 3 http://localhost:8001/health > /dev/null 2>&1; then
+        echo -e "  ${GREEN}✅ RAG API 健康检查通过${NC}"
+        
+        # 获取向量数据库信息
+        RAG_INFO=$(curl -s --connect-timeout 3 http://localhost:8001/health 2>/dev/null)
+        if [ $? -eq 0 ]; then
+            TOTAL_VECTORS=$(echo "$RAG_INFO" | python -c "import sys, json; data=json.load(sys.stdin); print(data['data']['vector_database']['total_vectors'])" 2>/dev/null || echo "0")
+            echo -e "  ${BLUE}📊 向量数量: $TOTAL_VECTORS${NC}"
+        fi
+    else
+        echo -e "  ${YELLOW}⚠️  RAG API 健康检查失败${NC}"
+    fi
+else
+    echo -e "  ${RED}❌ RAG服务未运行${NC}"
+fi
+
+# 检查向量数据库目录
+echo -e "\n${YELLOW}🗃️  向量数据库目录状态:${NC}"
+MULTIMODAL_DB_DIR="datas/vector_databases/multimodal"
+
+if [ -d "$MULTIMODAL_DB_DIR" ]; then
+    DB_SIZE=$(du -sh "$MULTIMODAL_DB_DIR" 2>/dev/null | cut -f1)
+    echo -e "  ${GREEN}✅ 多模态数据库目录存在 (大小: $DB_SIZE)${NC}"
+else
+    echo -e "  ${YELLOW}⚠️  多模态数据库目录不存在${NC}"
+fi
 
 # 检查日志文件
-echo -e "${CYAN}📋 日志文件状态:${NC}"
-if [ -d "backend/logs" ] && [ "$(ls -A backend/logs 2>/dev/null)" ]; then
-    echo -e "  ${GREEN}✅ 日志目录存在且有日志文件${NC}"
-    LATEST_LOG=$(ls -t backend/logs/*.log 2>/dev/null | head -1)
-    if [ -n "$LATEST_LOG" ]; then
-        LOG_SIZE=$(du -h "$LATEST_LOG" | cut -f1)
-        echo -e "  最新日志: $LATEST_LOG (大小: $LOG_SIZE)${NC}"
+echo -e "\n${YELLOW}📝 日志文件状态:${NC}"
+if [ -f "backend/logs/backend.log" ]; then
+    LOG_SIZE=$(du -sh backend/logs/backend.log 2>/dev/null | cut -f1)
+    echo -e "  ${GREEN}✅ 后端日志存在 (大小: $LOG_SIZE)${NC}"
+    
+    # 显示最近的错误
+    ERROR_COUNT=$(grep -c "ERROR" backend/logs/backend.log 2>/dev/null || echo "0")
+    ERROR_COUNT=$(echo "$ERROR_COUNT" | tr -d '\n\r')
+    if [ "$ERROR_COUNT" -gt 0 ] 2>/dev/null; then
+        echo -e "  ${YELLOW}⚠️  发现 $ERROR_COUNT 个错误日志${NC}"
     fi
 else
-    echo -e "  ${YELLOW}⚠️  日志目录不存在或为空${NC}"
+    echo -e "  ${RED}❌ 后端日志文件不存在${NC}"
 fi
 
-# 检查上传目录
-echo -e "${CYAN}📋 上传目录状态:${NC}"
-if [ -d "backend/uploads" ]; then
-    UPLOAD_COUNT=$(find backend/uploads -type f | wc -l | tr -d ' ')
-    echo -e "  ${GREEN}✅ 上传目录存在 (文件数量: $UPLOAD_COUNT)${NC}"
+if [ -f "backend/logs/frontend.log" ]; then
+    LOG_SIZE=$(du -sh backend/logs/frontend.log 2>/dev/null | cut -f1)
+    echo -e "  ${GREEN}✅ 前端日志存在 (大小: $LOG_SIZE)${NC}"
 else
-    echo -e "  ${YELLOW}⚠️  上传目录不存在${NC}"
+    echo -e "  ${YELLOW}⚠️  前端日志文件不存在${NC}"
 fi
 
-echo ""
-echo -e "${BLUE}📊 系统资源使用情况:${NC}"
-echo "=================================="
+# 系统资源使用情况
+echo -e "\n${YELLOW}💻 系统资源:${NC}"
+echo -e "  ${BLUE}CPU 使用率: $(top -l 1 | grep "CPU usage" | awk '{print $3}' | sed 's/%//')${NC}"
+echo -e "  ${BLUE}内存使用: $(top -l 1 | grep "PhysMem" | awk '{print $2}')${NC}"
 
-# 检查内存使用
-if command -v free &> /dev/null; then
-    MEMORY_INFO=$(free -h | grep "Mem:")
-    echo -e "内存使用: $MEMORY_INFO"
-fi
+# 网络连接状态
+echo -e "\n${YELLOW}🌐 网络连接:${NC}"
+echo -e "  ${BLUE}后端 API: http://localhost:8000${NC}"
+echo -e "  ${BLUE}前端界面: http://localhost:8080${NC}"
+echo -e "  ${BLUE}API 文档: http://localhost:8000/docs${NC}"
+echo -e "  ${BLUE}RAG 服务: http://localhost:8001${NC}"
 
-# 检查磁盘使用
-if command -v df &> /dev/null; then
-    DISK_INFO=$(df -h . | tail -1)
-    echo -e "磁盘使用: $DISK_INFO"
-fi
-
-# 检查Python进程
-echo -e "${CYAN}📋 Python进程:${NC}"
-PYTHON_COUNT=$(ps aux | grep python | grep -v grep | wc -l | tr -d ' ')
-echo -e "  运行中的Python进程: $PYTHON_COUNT 个"
-
-# 检查Node.js进程
-echo -e "${CYAN}📋 Node.js进程:${NC}"
-NODE_COUNT=$(ps aux | grep node | grep -v grep | wc -l | tr -d ' ')
-echo -e "  运行中的Node.js进程: $NODE_COUNT 个"
-
-echo ""
-echo -e "${BLUE}💡 快速启动命令:${NC}"
-echo "=================================="
-echo -e "一键启动所有服务: ${GREEN}./start-all.sh${NC}"
-echo -e "单独启动后端: ${GREEN}cd backend && ./start-dev.sh${NC}"
-echo -e "查看后端日志: ${GREEN}tail -f backend/logs/backend.log${NC}"
-echo -e "查看前端日志: ${GREEN}tail -f backend/logs/frontend.log${NC}"
-echo -e "查看Docker日志: ${GREEN}cd backend && docker compose logs -f${NC}"
-echo -e "检查API健康: ${GREEN}curl http://localhost:8000/health${NC}"
-echo ""
-
-echo -e "${BLUE}🎯 系统状态总结:${NC}"
-echo "=================================="
-
-# 计算健康状态
-HEALTH_SCORE=0
-TOTAL_CHECKS=6
-
-if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-    ((HEALTH_SCORE++))
-fi
-
-if curl -s http://localhost:8080 > /dev/null 2>&1; then
-    ((HEALTH_SCORE++))
-fi
-
-if docker exec zhizhentong_postgres pg_isready -U postgres -d zhizhentong > /dev/null 2>&1; then
-    ((HEALTH_SCORE++))
-fi
-
-if [ -d "backend/logs" ] && [ "$(ls -A backend/logs 2>/dev/null)" ]; then
-    ((HEALTH_SCORE++))
-fi
-
-if [ -d "backend/uploads" ]; then
-    ((HEALTH_SCORE++))
-fi
-
-if [ -d "../frontend/node_modules" ]; then
-    ((HEALTH_SCORE++))
-fi
-
-HEALTH_PERCENT=$((HEALTH_SCORE * 100 / TOTAL_CHECKS))
-
-if [ $HEALTH_PERCENT -ge 80 ]; then
-    echo -e "${GREEN}✅ 系统状态良好 ($HEALTH_PERCENT%)${NC}"
-elif [ $HEALTH_PERCENT -ge 60 ]; then
-    echo -e "${YELLOW}⚠️  系统状态一般 ($HEALTH_PERCENT%)${NC}"
-else
-    echo -e "${RED}❌ 系统状态较差 ($HEALTH_PERCENT%)${NC}"
-fi
-
-echo -e "健康检查通过: $HEALTH_SCORE/$TOTAL_CHECKS"
-echo ""
+echo -e "\n${GREEN}✅ 状态检查完成${NC}"

@@ -4,8 +4,8 @@
 
 // API配置
 export const API_CONFIG = {
-  BASE_URL: process.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
-  TIMEOUT: 10000,
+  BASE_URL: process.env.VITE_API_BASE_URL || '/api/v1',
+  TIMEOUT: 300000, // 增加到300秒，适应AI模型推理时间
   RETRY_COUNT: 3,
 }
 

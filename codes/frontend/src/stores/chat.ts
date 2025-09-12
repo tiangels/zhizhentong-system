@@ -213,21 +213,21 @@ export const useChatStore = defineStore('chat', () => {
   const initializeUserData = () => {
     const authStore = useAuthStore()
     console.log('Chat Store: 初始化用户数据')
-    
+
     // 检查用户是否已认证
     if (!authStore.isAuthenticated) {
       console.log('Chat Store: 用户未认证，跳过初始化')
       return
     }
-    
+
     // 加载用户专用的对话和消息数据
     const loadedConversations = loadConversationsFromStorage()
     const loadedMessages = loadMessagesFromStorage()
-    
+
     // 确保始终是数组
     conversations.value = Array.isArray(loadedConversations) ? loadedConversations : []
     messages.value = Array.isArray(loadedMessages) ? loadedMessages : []
-    
+
     // 双重检查确保数组状态
     ensureConversationsArray()
 
@@ -270,7 +270,9 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 创建新对话
    */
-  const createConversation = async(request: CreateConversationRequest): Promise<Conversation | null> => {
+  const createConversation = async (
+    request: CreateConversationRequest
+  ): Promise<Conversation | null> => {
     try {
       isLoading.value = true
       error.value = null
@@ -283,12 +285,12 @@ export const useChatStore = defineStore('chat', () => {
       // 调用后端API创建对话
       console.log('Chat Store: 开始创建对话，请求数据:', {
         title: request.title || '新对话',
-        conversation_type: request.type || 'general'
+        conversation_type: request.type || 'general',
       })
-      
+
       const response = await conversationApi.createConversation({
         title: request.title || '新对话',
-        conversation_type: request.type || 'general'
+        conversation_type: request.type || 'general',
       })
 
       console.log('Chat Store: API响应:', response)
@@ -352,7 +354,7 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 删除对话
    */
-  const deleteConversation = async(conversationId: string) => {
+  const deleteConversation = async (conversationId: string) => {
     try {
       isLoading.value = true
 
@@ -384,7 +386,7 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 更新对话标题
    */
-  const updateConversationTitle = async(conversationId: string, title: string) => {
+  const updateConversationTitle = async (conversationId: string, title: string) => {
     const conversation = conversations.value.find(c => c.id === conversationId)
     if (conversation) {
       conversation.title = title
@@ -399,7 +401,7 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 发送消息 - 使用实际API
    */
-  const sendMessage = async(request: SendMessageRequest): Promise<Message | null> => {
+  const sendMessage = async (request: SendMessageRequest): Promise<Message | null> => {
     if (!currentConversation.value) {
       console.error('没有当前对话')
       return null
@@ -429,7 +431,7 @@ export const useChatStore = defineStore('chat', () => {
 
       // 更新对话信息
       const existingUserMessages = messages.value.filter(
-        m => m.conversationId === currentConversation.value?.id && m.type === 'user',
+        m => m.conversationId === currentConversation.value?.id && m.type === 'user'
       ).length
 
       if (
@@ -446,7 +448,7 @@ export const useChatStore = defineStore('chat', () => {
       currentConversation.value.lastMessage = userMessage.content
       currentConversation.value.lastMessageAt = userMessage.timestamp
       currentConversation.value.messageCount = messages.value.filter(
-        m => m.conversationId === currentConversation.value?.id,
+        m => m.conversationId === currentConversation.value?.id
       ).length
       currentConversation.value.updatedAt = userMessage.timestamp
 
@@ -467,6 +469,9 @@ export const useChatStore = defineStore('chat', () => {
           // 从后端响应中提取AI回复
           const aiResponseContent = response.data.ai_response || '抱歉，暂时无法回复。'
           
+          console.log('AI回复内容:', aiResponseContent)
+          console.log('完整响应数据:', response.data)
+
           // 创建AI回复消息
           const aiMessage: Message = {
             id: generateUUID(),
@@ -488,7 +493,7 @@ export const useChatStore = defineStore('chat', () => {
           currentConversation.value.lastMessage = aiMessage.content
           currentConversation.value.lastMessageAt = aiMessage.timestamp
           currentConversation.value.messageCount = messages.value.filter(
-            m => m.conversationId === currentConversation.value?.id,
+            m => m.conversationId === currentConversation.value?.id
           ).length
           currentConversation.value.updatedAt = aiMessage.timestamp
 
@@ -502,12 +507,15 @@ export const useChatStore = defineStore('chat', () => {
         }
       } catch (apiError) {
         // 改进错误日志，确保错误信息可读
-        const errorMessage = apiError instanceof Error ? apiError.message : 
-                            typeof apiError === 'object' ? JSON.stringify(apiError) : 
-                            String(apiError)
+        const errorMessage =
+          apiError instanceof Error
+            ? apiError.message
+            : typeof apiError === 'object'
+              ? JSON.stringify(apiError)
+              : String(apiError)
         console.error('API调用失败，使用模拟回复:', errorMessage)
         console.error('完整错误对象:', apiError)
-        
+
         // 如果API调用失败，返回模拟回复
         return await sendMockMessage(userMessage.content)
       }
@@ -522,26 +530,187 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
+   * 发送消息（流式）
+   */
+  const sendMessageStream = async (request: SendMessageRequest): Promise<Message | null> => {
+    if (!currentConversation.value) {
+      console.error('没有当前对话')
+      return null
+    }
+
+    // 检查用户是否已登录
+    const authStore = useAuthStore()
+    if (!authStore.isLoggedIn) {
+      console.error('用户未登录，无法发送消息')
+      return null
+    }
+
+    try {
+      isLoading.value = true
+      isTyping.value = true
+      error.value = null
+
+      // 创建用户消息
+      const userMessage: Message = {
+        id: generateUUID(),
+        conversationId: currentConversation.value.id,
+        type: 'user',
+        contentType: 'text',
+        content: request.content,
+        timestamp: new Date().toISOString(),
+        status: 'sent',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+
+      // 添加用户消息到列表
+      messages.value.push(userMessage)
+      saveMessagesToStorage(messages.value)
+
+      // 更新对话信息
+      const existingUserMessages = messages.value.filter(
+        m => m.conversationId === currentConversation.value?.id && m.type === 'user'
+      ).length
+
+      if (
+        existingUserMessages === 1 &&
+        (currentConversation.value.title === '新对话' ||
+          currentConversation.value.title === '未命名对话')
+      ) {
+        currentConversation.value.title =
+          userMessage.content.length > 20
+            ? userMessage.content.substring(0, 20) + '...'
+            : userMessage.content
+      }
+
+      currentConversation.value.lastMessage = userMessage.content
+      currentConversation.value.lastMessageAt = userMessage.timestamp
+      currentConversation.value.messageCount = messages.value.filter(
+        m => m.conversationId === currentConversation.value?.id
+      ).length
+      currentConversation.value.updatedAt = userMessage.timestamp
+
+      // 保存对话更新
+      saveConversationsToStorage(conversations.value)
+
+      console.log('用户消息已发送:', userMessage.content)
+
+      // 创建AI消息占位符
+      const aiMessage: Message = {
+        id: generateUUID(),
+        conversationId: currentConversation.value.id,
+        type: 'assistant',
+        contentType: 'text',
+        content: '',
+        timestamp: new Date().toISOString(),
+        status: 'sending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+
+      // 添加AI消息占位符到列表
+      messages.value.push(aiMessage)
+      saveMessagesToStorage(messages.value)
+
+      // 调用流式API
+      try {
+        await conversationApi.sendMessageStream(
+          currentConversation.value.id,
+          {
+            content: request.content,
+          },
+          (data) => {
+            console.log('收到流式数据:', data)
+            
+            switch (data.type) {
+              case 'start':
+                console.log('开始生成回复...')
+                break
+              case 'content':
+                // 更新AI消息内容 - 优先使用full_content，否则追加content
+                if (data.full_content !== undefined) {
+                  aiMessage.content = data.full_content
+                } else if (data.content !== undefined) {
+                  // 追加新的内容片段
+                  aiMessage.content += data.content
+                }
+                aiMessage.updatedAt = new Date().toISOString()
+                saveMessagesToStorage(messages.value)
+                break
+              case 'done':
+                console.log('回复生成完成')
+                aiMessage.status = 'sent'
+                aiMessage.updatedAt = new Date().toISOString()
+                saveMessagesToStorage(messages.value)
+                break
+              case 'final':
+                // 使用最终内容
+                aiMessage.content = data.full_content || aiMessage.content
+                aiMessage.status = 'sent'
+                aiMessage.updatedAt = new Date().toISOString()
+                saveMessagesToStorage(messages.value)
+                break
+              case 'error':
+                console.error('流式生成错误:', data.message)
+                aiMessage.content = '抱歉，生成回复时出现错误。'
+                aiMessage.status = 'error'
+                aiMessage.updatedAt = new Date().toISOString()
+                saveMessagesToStorage(messages.value)
+                break
+            }
+          },
+          (error) => {
+            console.error('流式API错误:', error)
+            aiMessage.content = '抱歉，无法获取回复。'
+            aiMessage.status = 'error'
+            aiMessage.updatedAt = new Date().toISOString()
+            saveMessagesToStorage(messages.value)
+          },
+          () => {
+            console.log('流式生成完成')
+            // 更新对话信息
+            currentConversation.value!.lastMessage = aiMessage.content
+            currentConversation.value!.lastMessageAt = aiMessage.timestamp
+            currentConversation.value!.messageCount = messages.value.filter(
+              m => m.conversationId === currentConversation.value?.id
+            ).length
+            currentConversation.value!.updatedAt = aiMessage.timestamp
+            saveConversationsToStorage(conversations.value)
+          }
+        )
+
+        console.log('AI回复已接收:', aiMessage.content)
+        return aiMessage
+      } catch (apiError) {
+        console.error('流式API调用失败:', apiError)
+        aiMessage.content = '抱歉，无法获取回复。'
+        aiMessage.status = 'error'
+        aiMessage.updatedAt = new Date().toISOString()
+        saveMessagesToStorage(messages.value)
+        return aiMessage
+      }
+    } catch (err) {
+      console.error('发送流式消息失败:', err)
+      error.value = err instanceof Error ? err.message : '发送消息失败'
+      return null
+    } finally {
+      isLoading.value = false
+      isTyping.value = false
+    }
+  }
+
+  /**
    * 发送模拟消息
    */
-  const sendMockMessage = async(userContent: string): Promise<Message | null> => {
+  const sendMockMessage = async (userContent: string): Promise<Message | null> => {
     if (!currentConversation.value) return null
 
     try {
       // 模拟API延迟
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000))
 
-      // 生成模拟回复
-      const mockReplies = [
-        '我理解您的问题。让我为您详细分析一下...',
-        '这是一个很好的问题。根据我的理解...',
-        '感谢您的提问。我建议您可以考虑以下几个方面...',
-        '基于您提供的信息，我认为...',
-        '这个问题确实值得深入探讨。让我们从以下角度来看...',
-      ]
-
-      const randomReply = mockReplies[Math.floor(Math.random() * mockReplies.length)]
-      const mockContent = `${randomReply}\n\n针对您提到的"${userContent.substring(0, 20)}${userContent.length > 20 ? '...' : ''}"，我的建议是：\n\n1. 首先需要明确具体需求\n2. 然后制定合适的方案\n3. 最后逐步实施和优化\n\n希望这个回答对您有帮助。如果您还有其他问题，请随时告诉我。`
+      // 生成专业的医疗AI回复
+      const mockContent = generateMedicalReply(userContent)
 
       // 创建AI回复消息
       const aiMessage: Message = {
@@ -562,7 +731,7 @@ export const useChatStore = defineStore('chat', () => {
 
       // 更新对话信息
       const existingUserMessages = messages.value.filter(
-        m => m.conversationId === currentConversation.value?.id && m.type === 'user',
+        m => m.conversationId === currentConversation.value?.id && m.type === 'user'
       ).length
 
       if (
@@ -571,7 +740,7 @@ export const useChatStore = defineStore('chat', () => {
           currentConversation.value.title === '未命名对话')
       ) {
         const sentMessage = messages.value.find(
-          m => m.conversationId === currentConversation.value?.id && m.type === 'user',
+          m => m.conversationId === currentConversation.value?.id && m.type === 'user'
         )
         if (sentMessage) {
           currentConversation.value.title =
@@ -584,7 +753,7 @@ export const useChatStore = defineStore('chat', () => {
       currentConversation.value.lastMessage = aiMessage.content
       currentConversation.value.lastMessageAt = aiMessage.timestamp
       currentConversation.value.messageCount = messages.value.filter(
-        m => m.conversationId === currentConversation.value?.id,
+        m => m.conversationId === currentConversation.value?.id
       ).length
       currentConversation.value.updatedAt = aiMessage.timestamp
 
@@ -602,7 +771,7 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 重新发送消息
    */
-  const resendMessage = async(messageId: string) => {
+  const resendMessage = async (messageId: string) => {
     const message = messages.value.find(m => m.id === messageId)
     if (message && message.type === 'user') {
       // 删除原消息
@@ -615,14 +784,14 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 删除消息
    */
-  const deleteMessage = async(messageId: string) => {
+  const deleteMessage = async (messageId: string) => {
     messages.value = messages.value.filter(m => m.id !== messageId)
     saveMessagesToStorage(messages.value)
 
     // 更新对话的消息计数
     if (currentConversation.value) {
       currentConversation.value.messageCount = messages.value.filter(
-        m => m.conversationId === currentConversation.value?.id,
+        m => m.conversationId === currentConversation.value?.id
       ).length
       saveConversationsToStorage(conversations.value)
     }
@@ -696,7 +865,7 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 测试创建对话
    */
-  const testCreateConversation = async() => {
+  const testCreateConversation = async () => {
     console.log('=== 测试创建对话 ===')
     const conversation = await createConversation({
       title: '测试对话 - ' + new Date().toLocaleTimeString(),
@@ -714,7 +883,7 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 测试发送消息
    */
-  const testSendMessage = async(content?: string) => {
+  const testSendMessage = async (content?: string) => {
     if (!currentConversation.value) {
       console.log('没有当前对话，先创建一个测试对话')
       await testCreateConversation()
@@ -759,6 +928,7 @@ export const useChatStore = defineStore('chat', () => {
 
     // 消息管理
     sendMessage,
+    sendMessageStream,
     sendMockMessage,
     resendMessage,
     deleteMessage,

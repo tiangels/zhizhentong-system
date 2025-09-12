@@ -112,6 +112,12 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: '/test-binding',
+    name: 'TestBinding',
+    component: () => import('@/views/TestBinding.vue'),
+    meta: { title: '数据绑定测试' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/NotFound.vue'),
@@ -133,7 +139,7 @@ const router = createRouter({
 })
 
 // 全局前置守卫
-router.beforeEach(async(to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   console.log('路由守卫 - 从:', from.path, '到:', to.path)
 
   // 设置页面标题

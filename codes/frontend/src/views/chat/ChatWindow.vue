@@ -28,8 +28,14 @@ const quickActions = [
 ]
 
 // 发送消息
-const sendMessage = async() => {
+const sendMessage = async () => {
   if (!inputMessage.value.trim() || chatStore.isLoading) return
+
+  // 检查用户是否已登录
+  if (!authStore.isLoggedIn) {
+    console.error('用户未登录，无法发送消息')
+    return
+  }
 
   const message = inputMessage.value.trim()
   inputMessage.value = ''
@@ -50,7 +56,7 @@ const sendMessage = async() => {
       return
     }
 
-    await chatStore.sendMessage({
+    await chatStore.sendMessageStream({
       content: message,
       type: 'user',
       conversationId: chatStore.currentConversation.id,
@@ -65,30 +71,30 @@ const sendMessage = async() => {
 }
 
 // 发送快速消息
-const sendQuickMessage = async(text: string) => {
+const sendQuickMessage = async (text: string) => {
   inputMessage.value = text
   await sendMessage()
 }
 
 // 开始新对话
-const startNewConversation = async() => {
+const startNewConversation = async () => {
   try {
     console.log('开始新对话')
-    
+
     // 如果当前有对话且有消息，确保它被保存到历史中
     if (chatStore.currentConversation && chatStore.currentMessages.length > 0) {
       console.log('保存当前对话到历史:', chatStore.currentConversation.id)
       // 当前对话会在创建新对话时自动保存到conversations列表中
     }
-    
+
     await chatStore.createConversation({
       title: '新对话',
       type: 'diagnosis',
     })
-    
+
     // 清空输入框
     inputMessage.value = ''
-    
+
     // 滚动到底部
     await nextTick()
     scrollToBottom()
@@ -135,24 +141,24 @@ watch(
   { deep: true }
 )
 
-onMounted(async() => {
+onMounted(async () => {
   console.log('ChatWindow mounted, route params:', route.params, 'props:', props)
-  
+
   // 确保用户已登录并且 chat store 已初始化
   if (!authStore.isAuthenticated) {
     console.log('用户未登录，无法加载对话')
     return
   }
-  
+
   // 确保 chat store 用户数据已初始化
   if (chatStore.conversations.length === 0 && chatStore.messages.length === 0) {
     console.log('Chat store 数据未初始化，重新初始化用户数据')
     chatStore.initializeUserData()
   }
-  
+
   // 如果有路由参数ID，加载指定对话
   const conversationId = props.id || (route.params.id as string)
-  
+
   if (conversationId && conversationId !== 'new') {
     try {
       console.log('Loading conversation:', conversationId)
@@ -165,18 +171,23 @@ onMounted(async() => {
   } else {
     // 智能问诊页面：检查本地存储的对话历史
     console.log('智能问诊页面：检查本地对话历史')
-    
+
     // 首先检查本地是否有智能问诊对话和消息
     const localDiagnosisConversations = chatStore.conversations.filter(
       conv => conv.type === 'diagnosis' && conv.messageCount > 0
     )
-    
+
     const localMessages = chatStore.messages.filter((msg: any) =>
-      localDiagnosisConversations.some((conv: any) => conv.id === msg.conversationId),
+      localDiagnosisConversations.some((conv: any) => conv.id === msg.conversationId)
     )
-    
-    console.log('本地智能问诊对话数:', localDiagnosisConversations.length, '本地消息数:', localMessages.length)
-    
+
+    console.log(
+      '本地智能问诊对话数:',
+      localDiagnosisConversations.length,
+      '本地消息数:',
+      localMessages.length
+    )
+
     if (localDiagnosisConversations.length > 0 && localMessages.length > 0) {
       // 有本地对话和消息，直接使用本地数据
       const latestConversation = localDiagnosisConversations[0]
@@ -184,7 +195,7 @@ onMounted(async() => {
         '使用本地对话历史:',
         latestConversation.id,
         '消息数:',
-        localMessages.filter((m: any) => m.conversationId === latestConversation.id).length,
+        localMessages.filter((m: any) => m.conversationId === latestConversation.id).length
       )
       chatStore.currentConversation = latestConversation
     } else if (!chatStore.currentConversation) {
@@ -193,16 +204,21 @@ onMounted(async() => {
         console.log('没有本地对话历史，从API加载智能问诊对话历史')
         // 专门获取智能问诊类型的对话
         chatStore.initializeUserData()
-        
+
         // 查找有消息的智能问诊对话
         const diagnosisConversations = chatStore.conversations.filter(
-          conv => conv.type === 'diagnosis' && conv.messageCount > 0,
+          conv => conv.type === 'diagnosis' && conv.messageCount > 0
         )
-        
+
         if (diagnosisConversations.length > 0) {
           // 选择最近的智能问诊对话
           const latestConversation = diagnosisConversations[0]
-          console.log('从API找到最近的智能问诊对话:', latestConversation.id, '消息数:', latestConversation.messageCount)
+          console.log(
+            '从API找到最近的智能问诊对话:',
+            latestConversation.id,
+            '消息数:',
+            latestConversation.messageCount
+          )
           await chatStore.selectConversation(latestConversation.id)
         } else {
           console.log('没有智能问诊历史对话，等待用户创建')

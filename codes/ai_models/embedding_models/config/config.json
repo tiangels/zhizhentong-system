@@ -1,0 +1,24 @@
+{
+    "VECTOR_DB_PATH": "../../../datas/vector_databases/text",
+    "EMBEDDING_MODEL": "shibing624/text2vec-base-chinese",
+    "LOCAL_MODEL_PATH": "D:\\Consultation system\\models\\text2vec-base-chinese",
+    "PROXY": null,
+    "BATCH_SIZE": 100,
+    "DOWNLOAD_TIMEOUT": 30,
+    "MAX_RETRIES": 3,
+    "COLLECTION_NAME": "medical_knowledge",
+    "IMAGE_EMBEDDING": {
+        "ENABLED": true,
+        "EMBEDDER_TYPE": "resnet",
+        "MODEL_NAME": "resnet50",
+        "DEVICE": "cpu",
+        "BATCH_SIZE": 32,
+        "OUTPUT_PATH": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge/image_text_data/embeddings/image_embeddings.npy"
+    },
+    "MULTIMODAL_OPTIONS": {
+        "FUSE_TEXT_IMAGE": false,
+        "FUSION_METHOD": "concat",
+        "NORMALIZE_EMBEDDINGS": true,
+        "SAVE_SEPARATE_EMBEDDINGS": true
+    }
+}

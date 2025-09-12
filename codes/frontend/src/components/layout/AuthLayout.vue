@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import MainLayout from './MainLayout.vue'
+import { defineAsyncComponent } from 'vue'
+
+const MainLayout = defineAsyncComponent(() => import('./MainLayout.vue'))
 </script>
 
 <template>

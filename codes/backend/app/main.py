@@ -4,6 +4,7 @@ FastAPI主应用入口
 """
 
 import time
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +23,17 @@ from .database import engine
 # 全局变量用于存储应用启动时间
 app_start_time = None
 
+# 配置日志
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL.upper()),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # 输出到控制台
+        logging.FileHandler(settings.LOG_FILE, encoding='utf-8')  # 输出到文件
+    ]
+)
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,32 +44,40 @@ async def lifespan(app: FastAPI):
     
     # 启动时执行
     app_start_time = time.time()
+    logger.info("🚀 智诊通系统启动中...")
     print("🚀 智诊通系统启动中...")
     
     # 检查数据库连接
     try:
         check_database_connection()
+        logger.info("✅ 数据库连接正常")
         print("✅ 数据库连接正常")
     except Exception as e:
+        logger.error(f"❌ 数据库连接失败: {e}")
         print(f"❌ 数据库连接失败: {e}")
         raise
     
     # 创建数据库表
     try:
         await create_tables()
+        logger.info("✅ 数据库表创建完成")
         print("✅ 数据库表创建完成")
     except Exception as e:
+        logger.error(f"❌ 数据库表创建失败: {e}")
         print(f"❌ 数据库表创建失败: {e}")
         raise
     
     # 检查Redis连接
     try:
         redis_client.ping()
+        logger.info("✅ Redis连接正常")
         print("✅ Redis连接正常")
     except Exception as e:
+        logger.error(f"❌ Redis连接失败: {e}")
         print(f"❌ Redis连接失败: {e}")
         raise
     
+    logger.info("🎉 智诊通系统启动完成!")
     print("🎉 智诊通系统启动完成!")
     
     yield
@@ -155,11 +175,20 @@ app.add_middleware(
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     """
-    添加请求处理时间头
+    添加请求处理时间头和请求日志
     """
     start_time = time.time()
+    
+    # 记录请求信息
+    logger.info(f"🔍 收到请求: {request.method} {request.url.path}")
+    logger.info(f"📋 请求头: {dict(request.headers)}")
+    
     response = await call_next(request)
     process_time = time.time() - start_time
+    
+    # 记录响应信息
+    logger.info(f"✅ 响应状态: {response.status_code}, 处理时间: {process_time:.3f}s")
+    
     response.headers["X-Process-Time"] = str(process_time)
     return response
 
@@ -349,7 +378,22 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 
+# 健康检查端点
+@app.get("/health")
+async def health_check():
+    """健康检查端点"""
+    return {
+        "status": "healthy",
+        "message": "智诊通系统运行正常",
+        "version": "1.0.0"
+    }
+
 # 注册API路由
+# 认证路由直接注册到根路径
+from .api.auth import router as auth_router
+app.include_router(auth_router)
+
+# 其他API路由注册到 /api/v1 前缀
 app.include_router(api_router, prefix="/api/v1")
 
 
