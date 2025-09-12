@@ -1,0 +1,228 @@
+dialog1
+{"id": "Patients", "Sentence": "有点恶心,又有点想拉肚子,而且有点胸闷,和肺炎有关系吗?（男，36岁）", "Symptom": ["腹泻", "恶心"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["肺炎"]}
+{"id": "Doctor", "Sentence": "你好！这种情况多久了？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": ["时长"], "Disease": []}
+{"id": "Patients", "Sentence": "胸闷2—3天，以前也经常有，恶心想吐和经常拉肚子。", "Symptom": ["腹泻", "恶心", "呕吐"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "我感冒好了将近二十天左右吧，但是这几年每次感冒好了以后都基本有这种症状。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["感冒"]}
+{"id": "Doctor", "Sentence": "有没有发烧。", "Symptom": ["发热"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有发烧，每天量好几次都很正常，也很少咳嗽，有时也想咳嗽感觉有痰。", "Symptom": ["发热", "咳嗽", "有痰"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "有什么问题吗？医生。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "有接触疑似病例吗。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有没有去过武汉，附近也没有武汉人。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "本月8号到19号去了一趟海南三亚，19号晚上回来的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "因为感冒好了二十多天了，感觉一直这个状态所以就没有就医，但是这两天肺炎疫情让我感觉心里没底。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["感冒", "肺炎"]}
+{"id": "Patients", "Sentence": "不过近两年每次冬季感冒好了基本都这个情况。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["感冒"]}
+{"id": "Patients", "Sentence": "胸闷感觉有痰，但是不是很想咳嗽。所以感觉更胸闷了。", "Symptom": ["咳嗽", "有痰"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "精神状态还可以。就是比较紧张现在的疫情形势。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "医生您看有什么问题吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "？？？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "那应该和肺炎没什么关系。大家都紧张。你要做的就是宅。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["肺炎"]}
+{"id": "Patients", "Sentence": "好的谢谢您。没问题了。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不客气的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+
+
+dialog2
+{"id": "Patients", "Sentence": "早上空腹喝了蜂蜜水然后一直胃疼到现在（男，19岁）", "Symptom": ["胃痛"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "你好，你这种情况有多长时间了？以前有过胃病吗。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": ["时长"], "Disease": []}
+{"id": "Doctor", "Sentence": "有腹胀呕吐打嗝泛酸发热等其他症状吗。", "Symptom": ["腹胀", "发热", "呕吐", "打嗝", "反流"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "今天才会，不知道自己有没有胃病，腹胀经常有，打嗝偶尔，呕吐泛酸发热没有。", "Symptom": ["腹胀", "发热", "呕吐", "打嗝", "反流"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "大小便正常吗。做过什么检查及治疗吗？效果怎么样？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "正常；没有做过治疗和检查。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "你的情况考虑是有胃炎或胃肠功能紊乱等引起可能性大，建议清淡饮食，注意保暖，不要吃辛辣油腻和生冷食物，多喝点热水，不要抽烟喝酒，饭后适当活动，可以吃曲美布汀，雷贝拉唑一起改善症状，不行的话需要去医院做个腹部B超和胃镜检查等具体看下比较好。", "Symptom": ["胃肠功能紊乱"], "Medicine": ["雷呗", "曲美布汀"], "Examination": ["B超", "胃镜"], "Attribute": [], "Disease": ["胃炎"]}
+{"id": "Patients", "Sentence": "还有其他药可以吃吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "吃我推荐的药治疗改善症状观察下比较好。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的谢谢。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "我有个朋友他最近肚子时疼时不疼，而且疼了胃就疼肚脐下面，昨天腹泻了3次，然后吃了腹可安片和黄连，现在没事了，请问这是什么病？", "Symptom": ["腹泻", "腹痛", "胃痛"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不客气，祝你早日康复^_^", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "呃。。。医生麻烦看一下上面的问题。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "他的情况考虑急性胃肠炎引起可能性大。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["胃炎", "肠炎"]}
+{"id": "Patients", "Sentence": "那他还是要继续吃上面说的两种药那？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "平时要注意什么。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "好了就可以不吃了。清淡饮食比较好。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "急性胃肠炎一般好了就好了。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["胃炎", "肠炎"]}
+{"id": "Patients", "Sentence": "我想问一下割了阑尾之后肠胃会更脆弱了吗？因为我听说阑尾那里有很多淋巴。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "没有这样的说法。淋巴结是免疫系统。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "那会更容易得肠道的炎症吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["肠炎"]}
+{"id": "Doctor", "Sentence": "没有这样的说法。说过了。上面。担心过度了。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "我想问一下肚子总是莫名其妙的会疼或者不舒服是怎么回事，一会疼胃，一会疼胃的下面。一会疼肚子最下面。", "Symptom": ["胃痛"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "胃肠炎或胃肠功能紊乱等都可以引起，具体需要检查清楚才能知道。", "Symptom": ["胃肠功能紊乱"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["胃炎", "肠炎"]}
+{"id": "Patients", "Sentence": "那需要服用什么药物呢？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "症状:上腹痛，下腹痛，有时候感觉里面会叽里咕噜的感觉，有时候不舒服，有时候会痛。", "Symptom": ["腹痛"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "是你自己吗。大便正常吗。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "多久了，具体说清楚。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": ["时长"], "Disease": []}
+{"id": "Doctor", "Sentence": "有腹胀呕吐打嗝发热等其他症状吗。", "Symptom": ["腹胀", "发热", "呕吐", "打嗝"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+
+
+dialog3
+{"id": "Patients", "Sentence": "早晨醒来肚子有点疼，然后开始拉肚子，后面不拉肚子了但是肚子一直疼，是那种隔几分钟就绞痛，睡了一天到现在，头晕乏力整个人没力气还很想吐感到恶心，肚子现在只是有点疼了，有点低烧，体温大概37.7°-38°（女，22岁）", "Symptom": ["腹泻", "腹痛", "恶心", "呕吐", "乏力", "头晕"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "请问这是什么病。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "您好，请问有没有发烧，饮食不当及受凉呢？", "Symptom": ["发热"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "有点低烧，脸热，体温37.7°", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "饮食或者受凉我不太清楚。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "昨天吃的火锅，但是家里只有我这样，昨天晚上吹空调，但是只有我一个人这样。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "需要去医院看看吗。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "考虑饮食不当或者受凉引起的急性肠炎。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["肠炎"]}
+{"id": "Doctor", "Sentence": "可以先吃点药，如果效果不好可以再去医院。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的需要去医院吗。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "先去药店买点药也行。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+
+
+dialog4
+{"id": "Patients", "Sentence": "请问出现便血要怎么治疗（女，29岁）", "Symptom": ["便血"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "你好！是便后滴献血，还是大便中有血？", "Symptom": ["便血"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "大便中有血。", "Symptom": ["便血"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "不对，是便后有血。", "Symptom": ["便血"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "肛门有疼痛吗？鲜红色血？", "Symptom": ["肛周疼痛"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "轻微的疼，是鲜红色的，第二次上厕所又不会有了。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "考虑痔疮出血可能性大，多吃新鲜蔬菜水果，多饮水，避免刺激性辛辣食物，生冷食物等，避免劳累，熬夜，饮酒等，养成定时排便习惯，逐步缩短排便时间。", "Symptom": ["痔疮"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "最好来医院肛肠科看一下，必要时可以局部使用痔疮膏。", "Symptom": ["痔疮"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没长痔疮啊，也要擦吗？之前有过上完会疼痛，有点血丝那样子，", "Symptom": ["痔疮"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "有内痔可能，来医院肛肠科做个肛门指诊就知道了，没有确诊之前暂时不需要用药。", "Symptom": ["痔疮"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "痔疮出血，一般情况会自行停止的。", "Symptom": ["痔疮"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "哦，严重吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不严重的，平时饮食清淡点，多饮水，避免久坐，多运动。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "就是久坐少运动了！那还是要去检查吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "有时间就来医院肛肠科看一下，也不是很急的事情，你自己平时注意一下咯。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的，谢谢。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "客气。感谢你的肯定。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "还能再问个问题吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "可以的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "同居1年多还没怀孕是怎么回事啊？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "有很多种原因，这个问题属于生殖科，建议选择生殖科，重新发起咨询，接受专科的指导，都是免费咨询的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "嗯。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+
+
+dialog5
+{"id": "Patients", "Sentence": "前几天压力很大，吃不下饭。这几天心情好一点了，但是又感觉经常吃不饱，很容易饿。请问是不是身体出现异常了（男，22岁）", "Symptom": ["食欲不振"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "你好，有腹痛，腹泻便秘等不舒服吗？", "Symptom": ["腹泻", "腹痛"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘"]}
+{"id": "Patients", "Sentence": "昨天和今天有点拉肚子。", "Symptom": ["腹泻"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "其他的到是没啥，就是心里压力还是有点大。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "这几天有受凉或者吃什么不干净的东西吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "就是从吃不下饭，到最近很能吃吃很多。", "Symptom": ["食欲不振"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "大便有没有黑便和便血？", "Symptom": ["便血", "黑便"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "胃口是受情绪影响的，没有器质性问题。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "拉肚子期间生冷辛辣刺激性的东西少吃一些，平时多吃蔬菜。不需要太担心。", "Symptom": ["腹泻"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "谢谢。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不客气哈。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+
+
+dialog6
+{"id": "Patients", "Sentence": "医生您好，这是我的问题：肠胃不好（女，26岁）", "Symptom": ["胃肠不适"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "您好!请问有什么不舒服呢？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "肚子老是呱呱叫。", "Symptom": ["肠鸣"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "感觉是肠子在叫。", "Symptom": ["肠鸣"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "饿了叫，吃饱了也会叫。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "其他没有不适。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "这种情况多久了？大便情况如何？平时有什么病史吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": ["时长"], "Disease": []}
+{"id": "Patients", "Sentence": "9月份就开始这样，中途偶尔不这样，过段时间又这样了，有点便秘2-3天一次，偶尔会大便不成型，但是不稀。", "Symptom": ["稀便"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘"]}
+{"id": "Patients", "Sentence": "肠胃可能不太好，吃烧烤麻辣容易拉肚子，其他还好。", "Symptom": ["腹泻", "胃肠不适"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "可能是肠功能紊乱引起。", "Symptom": ["胃肠功能紊乱"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "其他不适都没有，就是肚子呱呱叫。", "Symptom": ["肠鸣"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "便秘时，多吃蔬菜水果，多喝水，多运动。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘"]}
+{"id": "Doctor", "Sentence": "肠胃不好，辛辣刺激性食物，油腻食物，寒凉食物不要吃。", "Symptom": ["胃肠不适"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的，那我需要去买点什么药吃嘛。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "平时腹胀吗？排气多吗？", "Symptom": ["腹胀", "排气"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有腹胀，就是三天不上厕所就排气多，上了过后。", "Symptom": ["腹胀", "排气"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有腹胀，就是三天不上厕所就排气多，上了过后就好了。", "Symptom": ["腹胀", "排气"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "就好了。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "可服用曲美布汀，整肠生治疗。", "Symptom": [], "Medicine": ["整肠生", "曲美布汀"], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "两样同时买来吃嘛？我这应该不会有什么大问题吧，应该不需要做肠镜胃镜什么的吧。", "Symptom": [], "Medicine": [], "Examination": ["肠镜", "胃镜"], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "两种药同时吃，可以先吃一段药调理一下，如果症状不缓解，再检查也不迟。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "肠镜的话我是两年前就做过的，胃镜就没做过，因为没有胃痛的症状。", "Symptom": ["胃痛"], "Medicine": [], "Examination": ["肠镜", "胃镜"], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "那时做的肠镜检查出来没有问题的。", "Symptom": [], "Medicine": [], "Examination": ["肠镜"], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "做过有问题吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "医生药都没给我开。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "哦，没问题一般都是肠功能紊乱引起。", "Symptom": ["胃肠功能紊乱"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "证明没有器质性病变，只有功能性改变。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的，那谢谢医生。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不客气。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+
+
+dialog7
+{"id": "Patients", "Sentence": "半夜里总是吐酸水，总是咳嗽。（男，50岁）", "Symptom": ["反流", "咳嗽"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "你好，这种情况多久了？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": ["时长"], "Disease": []}
+{"id": "Patients", "Sentence": "有半个月了。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "以前有没有胃部不适症状？", "Symptom": ["胃肠不适"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "今年做胃镜的时候，说是浅表性胃炎，伴胆汁反流。", "Symptom": ["反流"], "Medicine": [], "Examination": ["胃镜"], "Attribute": [], "Disease": ["胃炎"]}
+{"id": "Doctor", "Sentence": "这种情况有可能是反流性胃炎引起的症状。平时有没有服药？", "Symptom": ["反流"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["胃炎"]}
+{"id": "Patients", "Sentence": "吃过奥美拉唑、吗丁啉，最近没有吃药。", "Symptom": [], "Medicine": ["奥美", "吗丁啉"], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "今年做体检说是有脂肪肝，有没有影响啊？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "脂肪肝对消化有一定的影响。脂肪肝可以口服鸡骨草胶囊有清胆利湿的功效。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "可以继续口服奥美拉唑、枸橼酸莫沙必利等药物缓解症状，每日三餐不要吃得过饱。", "Symptom": [], "Medicine": ["奥美", "莫沙必利"], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的，谢谢您。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不客气，祝你身体健康。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+
+
+dialog8
+{"id": "Patients", "Sentence": "医生您好，我是上次跟您咨询内痔的那个，现在便血的情况已经好了，没有在便血，但是发现菊花处有一个小包不知道是不是外痔啊？（女，25岁）", "Symptom": ["痔疮", "便血"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "您好，有肛周疼痛症状吗。", "Symptom": ["肛周疼痛"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有什么感觉。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "除了大便的时候觉得有点紧。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "因为外痔有血栓性外痔、结缔组织外痔（皮垂）和炎性外痔第一个和第三种，肛门会有明显的感觉，也会大便带血。", "Symptom": ["痔疮", "便血"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "我现在大便没有带血了。", "Symptom": ["便血"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "要是外痔的话可能是结缔组织外痔，这种小的一般不用处理，也不会有太大的感觉。", "Symptom": ["痔疮"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "哦哦好的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "那这个一直都会有么？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "所以您之前便血，还是考虑内痔的问题。", "Symptom": ["痔疮", "便血"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "建议观察，我记得您之前看过肛肠科门诊，如果一直是这么小，可以不用处理，如果变大，或有其他症状，到时候在就诊。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "明白了谢谢您。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不客气。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+
+
+dialog9
+{"id": "Patients", "Sentence": "便秘最近2个月差不多每5天才有便意？大便干结颗粒状很干怎么办（男，23）", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘"]}
+{"id": "Doctor", "Sentence": "有没有腹痛腹胀做过什么检查没有。", "Symptom": ["腹痛", "腹胀"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有腹痛腹胀。", "Symptom": ["腹痛", "腹胀"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "平常饮食习惯怎么样活动多吗。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "之前检查慢性胃炎和直肠炎。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["胃炎", "肠炎"]}
+{"id": "Patients", "Sentence": "活动不是更多伏案工作。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "你的情况还是考虑与你生活方式有关系。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "慢性胃炎可以每天吃一根香蕉吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["胃炎"]}
+{"id": "Patients", "Sentence": "每天膳食纤维都吃呀。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "可以哈多喝水多运动功能性便秘一般就会缓解。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘"]}
+{"id": "Patients", "Sentence": "大便干结颗粒状拉不出来是不是因为直肠炎？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘", "肠炎"]}
+{"id": "Patients", "Sentence": "直肠炎严重吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["肠炎"]}
+{"id": "Doctor", "Sentence": "一般是不会的哈。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "苹果香蕉饭前什时候吃呢？听说可以改善便秘。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘"]}
+{"id": "Doctor", "Sentence": "这个没得啥特别的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "5天没大便了严重便秘肚脐下面感觉涨了很多是大便没排出去导致的吗？", "Symptom": ["腹胀"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘"]}
+{"id": "Doctor", "Sentence": "肯定考虑便秘引起的哈大便通畅这些症状就会缓解的哈。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": ["便秘"]}
+
+
+dialog10
+{"id": "Patients", "Sentence": "喝水的时候感觉喉咙口堵，胃连接食管的地方也有点堵堵的，但是吃饭一点都不堵（女，22岁）", "Symptom": ["吞咽困难"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "你好，很高兴为你服务。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "你好。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "喝水的时候感觉喉咙口堵，胃连接食管的地方也有点堵堵的，但是吃饭一点都不堵（女，22岁）", "Symptom": ["吞咽困难"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "多长时间了？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": ["时长"], "Disease": []}
+{"id": "Patients", "Sentence": "一个星期。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "有咳嗽，咽部疼痛吗？", "Symptom": ["咳嗽", "咽部痛"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "也没有。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "就感觉喉咙干干的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "有的时候嗳气，会舒服点。", "Symptom": ["打嗝"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "是不是。有没有反酸烧心呢？", "Symptom": ["反流", "烧心"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "没有。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "感觉有点不消化。", "Symptom": ["消化不良"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "就喝水会有点堵。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "以前喝水没事吗？", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "比如早上喝水感觉胃上面有点点堵，吃饭还好，吃完后喉咙口就感觉有东西也堵堵的，不怎么舒服。", "Symptom": ["腹胀"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "以前没有过。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "喉咙那里可以到五官科检查一下。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "就上次坐了长途车，开过了站，又冷又饿，第二天胃不舒服，第三天就开始这样了。", "Symptom": ["胃肠不适"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "可能是因为饮食不规律导致的。应该问题不大。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "饿了没有及时吃饭也会引起胃肠不适。", "Symptom": ["胃肠不适"], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "嗯嗯，谢谢你，医生。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不客气，调养一下就可以了。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "嗯嗯。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "嗯。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "需要吃点什么药不。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不需要。饮食调整一下就好。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "好的。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Patients", "Sentence": "谢谢。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+{"id": "Doctor", "Sentence": "不客气。", "Symptom": [], "Medicine": [], "Examination": [], "Attribute": [], "Disease": []}
+

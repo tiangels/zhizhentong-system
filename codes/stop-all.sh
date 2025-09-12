@@ -42,6 +42,32 @@ else
     echo -e "${YELLOW}⚠️  未找到后端进程ID文件${NC}"
 fi
 
+# 停止RAG服务
+echo -e "${CYAN}🛑 停止RAG检索增强服务...${NC}"
+
+# 检查是否有进程ID文件
+if [ -f ".rag.pid" ]; then
+    RAG_PID=$(cat .rag.pid)
+    if ps -p $RAG_PID > /dev/null 2>&1; then
+        echo -e "  正在停止RAG进程 (PID: $RAG_PID)..."
+        kill $RAG_PID
+        sleep 2
+        
+        # 强制停止如果还在运行
+        if ps -p $RAG_PID > /dev/null 2>&1; then
+            echo -e "  强制停止RAG进程..."
+            kill -9 $RAG_PID
+        fi
+        
+        echo -e "${GREEN}✅ RAG服务已停止${NC}"
+    else
+        echo -e "${YELLOW}⚠️  RAG进程已不存在${NC}"
+    fi
+    rm -f .rag.pid
+else
+    echo -e "${YELLOW}⚠️  未找到RAG进程ID文件${NC}"
+fi
+
 # 停止前端服务
 echo -e "${CYAN}🛑 停止前端服务...${NC}"
 
@@ -94,6 +120,29 @@ else
     echo -e "${GREEN}✅ 8000端口未被占用${NC}"
 fi
 
+# 停止占用8001端口的进程（RAG服务）
+PORT_8001_PIDS=$(lsof -ti:8001 2>/dev/null)
+if [ -n "$PORT_8001_PIDS" ]; then
+    echo -e "  发现占用8001端口的进程: $PORT_8001_PIDS"
+    for pid in $PORT_8001_PIDS; do
+        echo -e "  正在停止进程 (PID: $pid)..."
+        kill $pid
+    done
+    sleep 2
+    
+    # 强制停止如果还在运行
+    PORT_8001_PIDS=$(lsof -ti:8001 2>/dev/null)
+    if [ -n "$PORT_8001_PIDS" ]; then
+        echo -e "  强制停止占用8001端口的进程..."
+        for pid in $PORT_8001_PIDS; do
+            kill -9 $pid
+        done
+    fi
+    echo -e "${GREEN}✅ 8001端口已释放${NC}"
+else
+    echo -e "${GREEN}✅ 8001端口未被占用${NC}"
+fi
+
 # 停止占用8080端口的进程
 PORT_8080_PIDS=$(lsof -ti:8080 2>/dev/null)
 if [ -n "$PORT_8080_PIDS" ]; then
@@ -121,7 +170,7 @@ fi
 echo -e "${CYAN}🛑 停止相关进程...${NC}"
 
 # 停止智诊通相关的Python进程
-PYTHON_PIDS=$(ps aux | grep "zhizhentong\|uvicorn.*app.main:app" | grep -v grep | awk '{print $2}')
+PYTHON_PIDS=$(ps aux | grep "zhizhentong\|uvicorn.*app.main:app\|start_rag_service" | grep -v grep | awk '{print $2}')
 if [ -n "$PYTHON_PIDS" ]; then
     echo -e "  发现智诊通相关Python进程: $PYTHON_PIDS"
     for pid in $PYTHON_PIDS; do
@@ -131,7 +180,7 @@ if [ -n "$PYTHON_PIDS" ]; then
     sleep 2
     
     # 强制停止如果还在运行
-    PYTHON_PIDS=$(ps aux | grep "zhizhentong\|uvicorn.*app.main:app" | grep -v grep | awk '{print $2}')
+    PYTHON_PIDS=$(ps aux | grep "zhizhentong\|uvicorn.*app.main:app\|start_rag_service" | grep -v grep | awk '{print $2}')
     if [ -n "$PYTHON_PIDS" ]; then
         echo -e "  强制停止Python进程..."
         for pid in $PYTHON_PIDS; do
@@ -195,6 +244,7 @@ echo "=================================="
 
 # 检查端口占用
 echo -e "端口8000: $(lsof -i :8000 | wc -l | tr -d ' ') 个进程"
+echo -e "端口8001: $(lsof -i :8001 | wc -l | tr -d ' ') 个进程"
 echo -e "端口8080: $(lsof -i :8080 | wc -l | tr -d ' ') 个进程"
 
 # 检查进程
@@ -208,12 +258,12 @@ echo ""
 echo -e "${BLUE}🎯 停止结果总结:${NC}"
 echo "=================================="
 
-if [ $(lsof -i :8000 | wc -l | tr -d ' ') -eq 0 ] && [ $(lsof -i :8080 | wc -l | tr -d ' ') -eq 0 ]; then
+if [ $(lsof -i :8000 | wc -l | tr -d ' ') -eq 0 ] && [ $(lsof -i :8001 | wc -l | tr -d ' ') -eq 0 ] && [ $(lsof -i :8080 | wc -l | tr -d ' ') -eq 0 ]; then
     echo -e "${GREEN}✅ 所有服务已成功停止${NC}"
-    echo -e "${GREEN}✅ 端口8000和8080已释放${NC}"
+    echo -e "${GREEN}✅ 端口8000、8001和8080已释放${NC}"
 else
     echo -e "${YELLOW}⚠️  部分服务可能仍在运行${NC}"
-    echo -e "${YELLOW}💡 可以手动检查: lsof -i :8000 和 lsof -i :8080${NC}"
+    echo -e "${YELLOW}💡 可以手动检查: lsof -i :8000, lsof -i :8001 和 lsof -i :8080${NC}"
 fi
 
 echo ""

@@ -1,287 +1,287 @@
 """
-知识库API路由
-处理医疗知识检索和管理
+知识管理API路由
+处理知识库文档的增删改查和RAG系统管理
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import datetime
 from ..database import get_db
 from ..auth import get_current_user
 from ..models.user import User
-from ..models.knowledge import (
-    MedicalKnowledge, MedicalKnowledgeCreate, MedicalKnowledgeResponse,
-    KnowledgeRetrievalRequest, KnowledgeRetrievalResponse
-)
-from ..modules.rag import RAGRetrieval, RetrievalInput
+from ..services.rag_service import get_rag_service
+import json
+import logging
 
-router = APIRouter(prefix="/knowledge", tags=["知识库"])
-
-# 创建RAG检索实例
-rag_retrieval = RAGRetrieval()
+router = APIRouter(prefix="/knowledge", tags=["知识管理"])
+logger = logging.getLogger(__name__)
 
 
-@router.post("/retrieve", response_model=KnowledgeRetrievalResponse, summary="检索知识")
-async def retrieve_knowledge(
-    retrieval_request: KnowledgeRetrievalRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.get("/status", summary="获取RAG服务状态")
+async def get_rag_status():
+    """
+    获取RAG服务的运行状态
+    
+    Returns:
+        RAG服务状态信息
+    """
+    try:
+        rag_service = get_rag_service()
+        service_info = rag_service.get_service_info()
+        
+        return {
+            "status": "success",
+            "data": service_info
+        }
+        
+    except Exception as e:
+        logger.error(f"获取RAG服务状态失败: {e}")
+        return {
+            "status": "error",
+            "message": f"获取服务状态失败: {str(e)}"
+        }
+
+
+@router.post("/documents", summary="添加知识文档")
+async def add_knowledge_documents(
+    documents: List[dict],
+    current_user: User = Depends(get_current_user)
 ):
     """
-    检索相关知识
+    添加知识文档到RAG系统
     
-    - **query**: 查询文本
-    - **limit**: 返回结果数量限制
-    - **context**: 上下文信息（可选）
+    - **documents**: 文档列表，每个文档包含title, content, source等字段
+    
+    Returns:
+        添加结果
     """
-    # 准备检索输入
-    retrieval_input = RetrievalInput(
-        query=retrieval_request.query,
-        limit=retrieval_request.limit,
-        context=retrieval_request.context
-    )
-    
-    # 执行检索
-    retrieval_output = rag_retrieval.retrieve(retrieval_input)
-    
-    # 转换为响应格式
-    retrieved_knowledge = []
-    for item in retrieval_output.retrieved_knowledge:
-        retrieved_knowledge.append(MedicalKnowledgeResponse(
-            id=item.get('id', ''),
-            title=item.get('title', ''),
-            content=item.get('content', ''),
-            category=item.get('category', ''),
-            tags=item.get('tags', []),
-            source=item.get('source', ''),
-            vector_id=item.get('vector_id', ''),
-            created_at=item.get('created_at', datetime.now()),
-            updated_at=item.get('updated_at', datetime.now())
-        ))
-    
-    return KnowledgeRetrievalResponse(
-        query=retrieval_output.query,
-        retrieved_knowledge=retrieved_knowledge,
-        relevance_scores=retrieval_output.relevance_scores,
-        processing_time=retrieval_output.processing_time
-    )
-
-
-@router.get("/", response_model=List[MedicalKnowledgeResponse], summary="获取知识列表")
-async def get_knowledge_list(
-    skip: int = Query(0, ge=0, description="跳过记录数"),
-    limit: int = Query(20, ge=1, le=100, description="返回记录数"),
-    category: Optional[str] = Query(None, description="分类过滤"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    获取知识列表
-    
-    - **skip**: 跳过记录数（分页用）
-    - **limit**: 返回记录数（最大100）
-    - **category**: 分类过滤（可选）
-    """
-    query = db.query(MedicalKnowledge)
-    
-    if category:
-        query = query.filter(MedicalKnowledge.category == category)
-    
-    knowledge_items = query.order_by(MedicalKnowledge.created_at.desc()).offset(skip).limit(limit).all()
-    
-    return [
-        MedicalKnowledgeResponse(
-            id=str(item.id),
-            title=item.title,
-            content=item.content,
-            category=item.category,
-            tags=item.tags,
-            source=item.source,
-            vector_id=item.vector_id,
-            created_at=item.created_at,
-            updated_at=item.updated_at
-        )
-        for item in knowledge_items
-    ]
-
-
-# 将具体路径放在参数化路径之前
-@router.get("/categories/list", summary="获取知识分类列表")
-async def get_knowledge_categories(
-    db: Session = Depends(get_db)
-):
-    """
-    获取所有知识分类列表
-    """
-    categories = db.query(MedicalKnowledge.category).distinct().all()
-    
-    return {
-        "categories": [cat[0] for cat in categories if cat[0]],
-        "total": len(categories)
-    }
-
-
-@router.get("/tags/list", summary="获取知识标签列表")
-async def get_knowledge_tags(
-    db: Session = Depends(get_db)
-):
-    """
-    获取所有知识标签列表
-    """
-    # 获取所有标签
-    all_tags = []
-    knowledge_items = db.query(MedicalKnowledge.tags).all()
-    
-    for item in knowledge_items:
-        if item.tags:
-            all_tags.extend(item.tags)
-    
-    # 去重并统计
-    unique_tags = list(set(all_tags))
-    tag_counts = {}
-    
-    for tag in unique_tags:
-        # 使用字符串包含查询而不是数组包含查询
-        count = db.query(MedicalKnowledge).filter(
-            func.array_to_string(MedicalKnowledge.tags, ',').contains(tag)
-        ).count()
-        tag_counts[tag] = count
-    
-    return {
-        "tags": unique_tags,
-        "tag_counts": tag_counts,
-        "total": len(unique_tags)
-    }
-
-
-@router.get("/stats/summary", summary="获取知识库统计摘要")
-async def get_knowledge_stats(
-    db: Session = Depends(get_db)
-):
-    """
-    获取知识库统计摘要
-    """
-    # 总知识数量
-    total_knowledge = db.query(MedicalKnowledge).count()
-    
-    # 分类统计
-    category_stats = db.query(
-        MedicalKnowledge.category,
-        func.count(MedicalKnowledge.id)
-    ).group_by(MedicalKnowledge.category).all()
-    
-    # 来源统计
-    source_stats = db.query(
-        MedicalKnowledge.source,
-        func.count(MedicalKnowledge.id)
-    ).group_by(MedicalKnowledge.source).all()
-    
-    return {
-        "total_knowledge": total_knowledge,
-        "category_distribution": dict(category_stats),
-        "source_distribution": dict(source_stats),
-        "categories_count": len(category_stats),
-        "sources_count": len(source_stats)
-    }
-
-
-@router.get("/{knowledge_id}", response_model=MedicalKnowledgeResponse, summary="获取知识详情")
-async def get_knowledge_detail(
-    knowledge_id: str,
-    db: Session = Depends(get_db)
-):
-    """
-    获取指定知识的详情
-    
-    - **knowledge_id**: 知识ID
-    """
-    knowledge = db.query(MedicalKnowledge).filter(MedicalKnowledge.id == knowledge_id).first()
-    
-    if not knowledge:
+    try:
+        if not documents:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="文档列表不能为空"
+            )
+        
+        # 验证文档格式
+        for doc in documents:
+            if not doc.get('content'):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="文档内容不能为空"
+                )
+        
+        rag_service = get_rag_service()
+        
+        if not rag_service.is_available():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="RAG服务不可用"
+            )
+        
+        # 添加文档到RAG系统
+        success = await rag_service.add_knowledge_documents(documents)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"成功添加 {len(documents)} 个文档",
+                "document_count": len(documents)
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="添加文档失败"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"添加知识文档失败: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="知识不存在"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"添加文档失败: {str(e)}"
         )
-    
-    return MedicalKnowledgeResponse(
-        id=str(knowledge.id),
-        title=knowledge.title,
-        content=knowledge.content,
-        category=knowledge.category,
-        tags=knowledge.tags,
-        source=knowledge.source,
-        vector_id=knowledge.vector_id,
-        created_at=knowledge.created_at,
-        updated_at=knowledge.updated_at
-    )
 
 
-@router.put("/{knowledge_id}", response_model=MedicalKnowledgeResponse, summary="更新知识")
-async def update_knowledge(
-    knowledge_id: str,
-    knowledge_update: MedicalKnowledgeCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.post("/query", summary="查询知识库")
+async def query_knowledge(
+    question: str,
+    top_k: int = Query(5, ge=1, le=20, description="返回文档数量"),
+    current_user: User = Depends(get_current_user)
 ):
     """
-    更新知识信息
+    查询知识库
     
-    - **knowledge_id**: 知识ID
-    - **knowledge_update**: 更新的知识信息
+    - **question**: 查询问题
+    - **top_k**: 返回文档数量（1-20）
+    
+    Returns:
+        查询结果
     """
-    knowledge = db.query(MedicalKnowledge).filter(MedicalKnowledge.id == knowledge_id).first()
-    
-    if not knowledge:
+    try:
+        if not question.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="查询问题不能为空"
+            )
+        
+        rag_service = get_rag_service()
+        
+        if not rag_service.is_available():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="RAG服务不可用"
+            )
+        
+        # 查询知识库
+        result = await rag_service.query_knowledge(question, top_k=top_k)
+        
+        if result.get('success'):
+            return {
+                "status": "success",
+                "data": result.get('result', {})
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"查询失败: {result.get('error', 'Unknown error')}"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"查询知识库失败: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="知识不存在"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"查询失败: {str(e)}"
         )
-    
-    # 更新知识信息
-    knowledge.title = knowledge_update.title
-    knowledge.content = knowledge_update.content
-    knowledge.category = knowledge_update.category
-    knowledge.tags = knowledge_update.tags
-    knowledge.source = knowledge_update.source
-    
-    db.commit()
-    db.refresh(knowledge)
-    
-    return MedicalKnowledgeResponse(
-        id=str(knowledge.id),
-        title=knowledge.title,
-        content=knowledge.content,
-        category=knowledge.category,
-        tags=knowledge.tags,
-        source=knowledge.source,
-        vector_id=knowledge.vector_id,
-        created_at=knowledge.created_at,
-        updated_at=knowledge.updated_at
-    )
 
 
-@router.delete("/{knowledge_id}", summary="删除知识")
-async def delete_knowledge(
-    knowledge_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.post("/upload", summary="上传知识文档文件")
+async def upload_knowledge_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
 ):
     """
-    删除知识
+    上传知识文档文件（支持JSON格式）
     
-    - **knowledge_id**: 知识ID
+    - **file**: 上传的文件（JSON格式）
+    
+    Returns:
+        上传结果
     """
-    knowledge = db.query(MedicalKnowledge).filter(MedicalKnowledge.id == knowledge_id).first()
-    
-    if not knowledge:
+    try:
+        if not file.filename.endswith('.json'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="只支持JSON格式文件"
+            )
+        
+        # 读取文件内容
+        content = await file.read()
+        
+        try:
+            documents = json.loads(content.decode('utf-8'))
+        except json.JSONDecodeError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"JSON格式错误: {str(e)}"
+            )
+        
+        if not isinstance(documents, list):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="文档格式错误，应为数组格式"
+            )
+        
+        # 验证文档格式
+        for i, doc in enumerate(documents):
+            if not isinstance(doc, dict):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"第{i+1}个文档格式错误，应为对象格式"
+                )
+            if not doc.get('content'):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"第{i+1}个文档缺少content字段"
+                )
+        
+        rag_service = get_rag_service()
+        
+        if not rag_service.is_available():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="RAG服务不可用"
+            )
+        
+        # 添加文档到RAG系统
+        success = await rag_service.add_knowledge_documents(documents)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"成功上传并添加 {len(documents)} 个文档",
+                "filename": file.filename,
+                "document_count": len(documents)
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="添加文档失败"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"上传知识文档失败: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="知识不存在"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"上传失败: {str(e)}"
         )
+
+
+@router.get("/test", summary="测试RAG服务")
+async def test_rag_service(
+    question: str = Query("什么是感冒？", description="测试问题"),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    测试RAG服务功能
     
-    db.delete(knowledge)
-    db.commit()
+    - **question**: 测试问题
     
-    return {"message": "知识删除成功"}
+    Returns:
+        测试结果
+    """
+    try:
+        rag_service = get_rag_service()
+        
+        if not rag_service.is_available():
+            return {
+                "status": "error",
+                "message": "RAG服务不可用",
+                "service_info": rag_service.get_service_info()
+            }
+        
+        # 测试查询
+        result = await rag_service.query_knowledge(question, top_k=3)
+        
+        # 测试对话生成
+        chat_result = await rag_service.generate_response(question)
+        
+        return {
+            "status": "success",
+            "message": "RAG服务测试完成",
+            "service_info": rag_service.get_service_info(),
+            "query_test": result,
+            "chat_test": chat_result
+        }
+        
+    except Exception as e:
+        logger.error(f"测试RAG服务失败: {e}")
+        return {
+            "status": "error",
+            "message": f"测试失败: {str(e)}",
+            "service_info": get_rag_service().get_service_info() if get_rag_service() else None
+        }

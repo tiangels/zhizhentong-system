@@ -27,15 +27,15 @@ const apiService: AxiosInstance = axios.create({
     (data, _headers) => {
       console.log('🔄 Axios transformRequest - 原始数据:', data)
       console.log('🔄 Axios transformRequest - 数据类型:', typeof data)
-      
+
       if (data && typeof data === 'object' && !(data instanceof FormData)) {
         const serialized = JSON.stringify(data)
         console.log('🔄 Axios transformRequest - 序列化后:', serialized)
         return serialized
       }
       return data
-    }
-  ]
+    },
+  ],
 })
 
 // 添加调试信息
@@ -77,7 +77,7 @@ apiService.interceptors.request.use(
   error => {
     console.error('请求拦截器错误:', error)
     return Promise.reject(error)
-  },
+  }
 )
 
 /**
@@ -96,58 +96,58 @@ apiService.interceptors.response.use(
       const { status, data } = response
 
       switch (status) {
-      case 401:
-        // 未授权，清除token
-        const hadToken = !!getLocalStorage(STORAGE_KEYS.USER_TOKEN)
-        removeLocalStorage(STORAGE_KEYS.USER_TOKEN)
-        removeLocalStorage(STORAGE_KEYS.USER_INFO)
+        case 401:
+          // 未授权，清除token
+          const hadToken = !!getLocalStorage(STORAGE_KEYS.USER_TOKEN)
+          removeLocalStorage(STORAGE_KEYS.USER_TOKEN)
+          removeLocalStorage(STORAGE_KEYS.USER_INFO)
 
-        // 只有在用户之前有token（即已登录状态）时才显示错误和跳转
-        if (hadToken) {
-          // 显示错误消息
-          message.error(ERROR_MESSAGES.UNAUTHORIZED)
-          
-          // 跳转到登录页
-          window.location.href = '/auth/login'
-        }
-        break
+          // 只有在用户之前有token（即已登录状态）时才显示错误和跳转
+          if (hadToken) {
+            // 显示错误消息
+            message.error(ERROR_MESSAGES.UNAUTHORIZED)
 
-      case 403:
-        // 禁止访问
-        message.error(ERROR_MESSAGES.FORBIDDEN)
-        break
+            // 跳转到登录页
+            window.location.href = '/auth/login'
+          }
+          break
 
-      case 404:
-        // 资源不存在
-        message.error(ERROR_MESSAGES.NOT_FOUND)
-        break
+        case 403:
+          // 禁止访问
+          message.error(ERROR_MESSAGES.FORBIDDEN)
+          break
 
-      case 422:
-        // 请求参数错误
-        if (data.message) {
-          message.error(data.message)
-        } else {
-          message.error(ERROR_MESSAGES.VALIDATION_ERROR)
-        }
-        break
+        case 404:
+          // 资源不存在
+          message.error(ERROR_MESSAGES.NOT_FOUND)
+          break
 
-      case 429:
-        // 请求频率限制
-        message.error(ERROR_MESSAGES.RATE_LIMIT)
-        break
+        case 422:
+          // 请求参数错误
+          if (data.message) {
+            message.error(data.message)
+          } else {
+            message.error(ERROR_MESSAGES.VALIDATION_ERROR)
+          }
+          break
 
-      case 500:
-        // 服务器内部错误
-        message.error(ERROR_MESSAGES.SERVER_ERROR)
-        break
+        case 429:
+          // 请求频率限制
+          message.error(ERROR_MESSAGES.RATE_LIMIT)
+          break
 
-      default:
-        // 其他错误
-        if (data.message) {
-          message.error(data.message)
-        } else {
-          message.error(ERROR_MESSAGES.UNKNOWN_ERROR)
-        }
+        case 500:
+          // 服务器内部错误
+          message.error(ERROR_MESSAGES.SERVER_ERROR)
+          break
+
+        default:
+          // 其他错误
+          if (data.message) {
+            message.error(data.message)
+          } else {
+            message.error(ERROR_MESSAGES.UNKNOWN_ERROR)
+          }
       }
     } else if (error.code === 'ECONNABORTED') {
       // 请求超时
@@ -161,7 +161,7 @@ apiService.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  },
+  }
 )
 
 /**
@@ -303,7 +303,7 @@ export const upload = async <T = any>(
   url: string,
   file: File,
   onProgress?: (progress: number) => void,
-  config?: any,
+  config?: any
 ): Promise<T> => {
   const formData = new FormData()
   formData.append('file', file)

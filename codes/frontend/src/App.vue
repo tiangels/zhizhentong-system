@@ -19,11 +19,11 @@ onMounted(async () => {
 
     // 初始化主题
     uiStore.initTheme()
-    
+
     // 检查认证状态
     console.log('App.vue - 检查认证状态')
     await authStore.checkAuthStatus()
-    
+
     console.log('App.vue - 应用初始化完成')
   } catch (error) {
     console.error('应用初始化失败:', error)

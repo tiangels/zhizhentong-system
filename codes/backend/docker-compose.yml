@@ -5,8 +5,8 @@ services:
     container_name: zhizhentong_postgres
     environment:
       POSTGRES_DB: zhizhentong
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      POSTGRES_USER: zhizhentong
+      POSTGRES_PASSWORD: zhizhentong123
     ports:
       - "5432:5432"
     volumes:

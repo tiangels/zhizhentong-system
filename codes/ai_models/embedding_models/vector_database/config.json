@@ -1,9 +1,0 @@
-{
-    "VECTOR_DB_PATH": "d:\\Consultation system\\processed_vqa_data\\vector_database\\chroma_db",
-    "EMBEDDING_MODEL": "shibing624/text2vec-base-chinese",
-    "LOCAL_MODEL_PATH": "d:\\Consultation system\\models\\text2vec-base-chinese",
-    "PROXY": null,
-    "BATCH_SIZE": 100,
-    "DOWNLOAD_TIMEOUT": 30,
-    "MAX_RETRIES": 3
-}

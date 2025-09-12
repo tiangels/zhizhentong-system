@@ -48,7 +48,7 @@ const createNewChat = async () => {
       type: 'general',
     })
     router.push('/chat')
-  } catch (error: any) {
+  } catch (error: unknown) {
     message.error('创建对话失败')
   }
 }
@@ -57,7 +57,7 @@ const deleteConversation = async (conversationId: string) => {
   try {
     await chatStore.deleteConversation(conversationId)
     message.success('删除成功')
-  } catch (error: any) {
+  } catch (error: unknown) {
     message.error('删除失败')
   }
 }
@@ -88,11 +88,7 @@ onMounted(async () => {
     <div class="history-header">
       <h2>{{ showAll ? '全部对话历史' : '最近对话' }}</h2>
       <div class="header-actions">
-        <a-button 
-          type="default" 
-          @click="toggleShowAll"
-          :icon="showAll ? 'eye-invisible' : 'eye'"
-        >
+        <a-button type="default" @click="toggleShowAll" :icon="showAll ? 'eye-invisible' : 'eye'">
           {{ showAll ? '显示最近' : '查看全部' }}
         </a-button>
         <a-button type="primary" @click="createNewChat"> 新建对话 </a-button>
@@ -145,7 +141,7 @@ onMounted(async () => {
             :page-size="pageSize"
             :show-size-changer="false"
             :show-quick-jumper="true"
-            :show-total="(total: number) => `共 ${total} 条对话`"
+            :show-total="total => `共 ${total} 条对话`"
             @change="onPageChange"
           />
         </div>

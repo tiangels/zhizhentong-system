@@ -9,8 +9,8 @@
  * API配置
  */
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
-  TIMEOUT: 30000,
+  BASE_URL: '/api/v1', // 使用相对路径，让Vite代理处理
+  TIMEOUT: 300000, // 增加到300秒，适应AI模型推理时间
   RETRIES: 3,
   RETRY_DELAY: 1000,
 } as const
@@ -101,9 +101,9 @@ export const clearUserStorage = (userId: string | number): void => {
   const userKeys = [
     getUserStorageKey(STORAGE_KEYS.CHAT_HISTORY, userId),
     getUserStorageKey(STORAGE_KEYS.CHAT_MESSAGES, userId),
-    getUserStorageKey(STORAGE_KEYS.USER_SETTINGS, userId)
+    getUserStorageKey(STORAGE_KEYS.USER_SETTINGS, userId),
   ]
-  
+
   userKeys.forEach(key => {
     try {
       localStorage.removeItem(key)

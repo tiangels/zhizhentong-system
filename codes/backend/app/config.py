@@ -92,7 +92,7 @@ class Settings(BaseSettings):
     
     # 日志配置
     LOG_LEVEL: str = Field(default="INFO", env="LOG_LEVEL")
-    LOG_FILE: str = Field(default="./logs/app.log", env="LOG_FILE")
+    LOG_FILE: str = Field(default="./logs/backend.log", env="LOG_FILE")
     
     # 缓存配置
     CACHE_TTL: int = Field(default=3600, env="CACHE_TTL")  # 1小时

@@ -37,7 +37,7 @@ const goToLogin = () => {
 }
 
 // 退出登录
-const logout = async() => {
+const logout = async () => {
   try {
     await authStore.logout()
     router.push('/')

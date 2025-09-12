@@ -105,7 +105,7 @@ export function clearLocalStorage(): void {
  */
 export function formatDateTime(
   date: Date | string | number,
-  format: string = TIME_FORMAT.DATETIME,
+  format: string = TIME_FORMAT.DATETIME
 ): string {
   return dayjs(date).format(format)
 }
@@ -325,7 +325,7 @@ export function generateId(): string {
  * @returns UUID字符串
  */
 export function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = (Math.random() * 16) | 0
     const v = c === 'x' ? r : (r & 0x3) | 0x8
     return v.toString(16)
@@ -371,7 +371,7 @@ export function groupArray<T>(array: T[], key: keyof T): Record<string, T[]> {
       groups[groupKey].push(item)
       return groups
     },
-    {} as Record<string, T[]>,
+    {} as Record<string, T[]>
   )
 }
 

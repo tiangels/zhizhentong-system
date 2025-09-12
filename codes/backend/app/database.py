@@ -30,12 +30,19 @@ def get_db() -> Generator[Session, None, None]:
     """
     获取数据库会话的依赖函数
     用于FastAPI的依赖注入
-    """
+"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.debug(f"🔗 创建新的数据库会话...")
     db = SessionLocal()
     try:
+        logger.debug(f"✅ 数据库会话创建成功")
         yield db
     finally:
+        logger.debug(f"🔒 关闭数据库会话...")
         db.close()
+        logger.debug(f"✅ 数据库会话已关闭")
 
 
 @contextmanager
@@ -44,15 +51,26 @@ def get_db_context() -> Generator[Session, None, None]:
     获取数据库会话的上下文管理器
     用于手动管理数据库会话
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.debug(f"🔗 创建数据库上下文会话...")
     db = SessionLocal()
     try:
+        logger.debug(f"✅ 数据库上下文会话创建成功")
         yield db
+        logger.debug(f"💾 提交数据库事务...")
         db.commit()
-    except Exception:
+        logger.debug(f"✅ 数据库事务提交成功")
+    except Exception as e:
+        logger.error(f"❌ 数据库操作失败，开始回滚: {e}")
         db.rollback()
+        logger.error(f"🔄 数据库事务已回滚")
         raise
     finally:
+        logger.debug(f"🔒 关闭数据库上下文会话...")
         db.close()
+        logger.debug(f"✅ 数据库上下文会话已关闭")
 
 
 async def create_tables():

@@ -1,0 +1,109 @@
+{
+  "version": "2.0.0",
+  "description": "医疗知识数据统一存储配置",
+  "data_structure": {
+    "base_dir": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge",
+    "text_data": {
+      "raw_dir": "text_data/raw",
+      "processed_dir": "text_data/processed",
+      "embeddings_dir": "text_data/embeddings",
+      "vector_db_dir": "vector_databases/text"
+    },
+    "image_text_data": {
+      "raw_dir": "image_text_data/raw",
+      "processed_dir": "image_text_data/processed",
+      "embeddings_dir": "image_text_data/embeddings",
+      "vector_db_dir": "vector_databases/image"
+    },
+    "voice_data": {
+      "raw_dir": "voice_data/raw",
+      "processed_dir": "voice_data/processed",
+      "embeddings_dir": "voice_data/embeddings",
+      "vector_db_dir": "vector_databases/voice"
+    },
+    "multimodal": {
+      "vector_db_dir": "vector_databases/multimodal"
+    },
+    "training_data": {
+      "dir": "training_data"
+    },
+    "test_data": {
+      "dir": "test_data"
+    },
+    "logs": {
+      "dir": "logs"
+    }
+  },
+  "models": {
+    "text_embedding": {
+      "model_name": "text2vec-base-chinese",
+      "model_path": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/codes/ai_models/llm_models/text2vec-base-chinese",
+      "max_length": 512,
+      "batch_size": 32
+    },
+    "image_embedding": {
+      "model_name": "clip-vit-base-patch32",
+      "model_path": "models/pretrained/clip-vit-base-patch32",
+      "image_size": 224,
+      "batch_size": 16
+    },
+    "voice_embedding": {
+      "model_name": "wav2vec2-base",
+      "model_path": "models/pretrained/wav2vec2-base",
+      "sample_rate": 16000,
+      "batch_size": 8
+    }
+  },
+  "processing": {
+    "text": {
+      "max_length": 512,
+      "batch_size": 32,
+      "preprocessing": {
+        "remove_special_chars": true,
+        "normalize_whitespace": true,
+        "remove_duplicates": true
+      }
+    },
+    "image": {
+      "resize": [
+        224,
+        224
+      ],
+      "normalize": true,
+      "batch_size": 16,
+      "supported_formats": [
+        "jpg",
+        "jpeg",
+        "png",
+        "bmp",
+        "dicom"
+      ]
+    },
+    "voice": {
+      "sample_rate": 16000,
+      "max_duration": 30,
+      "batch_size": 8,
+      "supported_formats": [
+        "wav",
+        "mp3",
+        "m4a"
+      ]
+    }
+  },
+  "vector_database": {
+    "type": "chroma",
+    "collection_names": {
+      "text": "medical_text_vectors",
+      "image": "medical_image_vectors",
+      "voice": "medical_voice_vectors",
+      "multimodal": "medical_multimodal_vectors"
+    },
+    "distance_metric": "cosine"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/medical_knowledge_processing.log",
+    "max_size": "10MB",
+    "backup_count": 5
+  }
+}

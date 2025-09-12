@@ -1,0 +1,52 @@
+{
+    "BASE_DATA_DIR": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge",
+    
+    "PROCESSED_REPORTS_PATH": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge/image_text_data/processed/processed_reports.csv",
+    "TRAIN_REPORTS_PATH": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge/training_data/dialogue_train.csv",
+    "TEST_REPORTS_PATH": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge/test_data/dialogue_test.csv",
+    
+    "PROCESSED_IMAGES_PATH": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge/image_text_data/processed/processed_images.npy",
+    "TRAIN_IMAGES_PATH": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge/image_text_data/processed/train_images.npy",
+    "TEST_IMAGES_PATH": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge/image_text_data/processed/test_images.npy",
+    
+    "TEXT_VECTOR_DB_PATH": "../../../datas/vector_databases/text",
+    "IMAGE_VECTOR_DB_PATH": "../../../datas/vector_databases/image",
+    "MULTIMODAL_VECTOR_DB_PATH": "../../../datas/vector_databases/multimodal",
+    
+    "TEXT_COLLECTION_NAME": "medical_text_vectors",
+    "IMAGE_COLLECTION_NAME": "medical_image_vectors",
+    "MULTIMODAL_COLLECTION_NAME": "medical_multimodal_vectors",
+    
+    "TEXT_EMBEDDING_MODEL": "shibing624/text2vec-base-chinese",
+    "IMAGE_EMBEDDING_MODEL": "resnet50",
+    "IMAGE_EMBEDDER_TYPE": "resnet",
+    "IMAGE_EMBEDDER_DEVICE": "cpu",
+    
+    "BATCH_SIZE": 100,
+    "IMAGE_BATCH_SIZE": 32,
+    "MAX_IMAGES_PER_BATCH": 500,
+    "DOWNLOAD_TIMEOUT": 30,
+    "MAX_RETRIES": 3,
+    
+    "IMAGE_EMBEDDING_ENABLED": true,
+    "PROXY": null,
+    "LOCAL_MODEL_PATH": null,
+    
+    "IMAGE_EMBEDDING": {
+        "ENABLED": true,
+        "EMBEDDER_TYPE": "clip",
+        "MODEL_NAME": "openai/clip-vit-base-patch32",
+        "DEVICE": "cpu",
+        "BATCH_SIZE": 32,
+        "OUTPUT_PATH": "/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/datas/medical_knowledge/image_text_data/embeddings/image_embeddings.npy"
+    },
+    
+    "MULTIMODAL_OPTIONS": {
+        "FUSE_TEXT_IMAGE": false,
+        "FUSION_METHOD": "concat",
+        "NORMALIZE_EMBEDDINGS": true,
+        "SAVE_SEPARATE_EMBEDDINGS": true
+    },
+    
+    "MAPPING_FILE": "../../../datas/vector_databases/multimodal/image_text_mapping.json"
+}
