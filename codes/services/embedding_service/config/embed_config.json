@@ -1,0 +1,126 @@
+{
+  "version": "2.0.0",
+  "description": "智诊通向量化系统统一配置文件",
+  "last_updated": "2025-01-17",
+  
+  "project_structure": {
+    "project_root": "../../../",
+    "base_data_dir": "../../../datas/medical_knowledge",
+    "logs_dir": "../../../logs",
+    "models_dir": "../../../aimodels"
+  },
+  
+  "data_directories": {
+    "text_data": {
+      "raw_dir": "text_data/raw",
+      "processed_dir": "text_data/processed"
+    },
+    "image_text_data": {
+      "raw_dir": "image_text_data/raw",
+      "processed_dir": "image_text_data/processed"
+    },
+    "voice_data": {
+      "raw_dir": "voice_data/raw",
+      "processed_dir": "voice_data/processed"
+    }
+  },
+  
+  "model_config_path": "../../aimodels/model_config.json",
+  
+  "vector_database": {
+    "type": "chroma",
+    "persist_directory": "../../../datas/chroma_db",
+    "collections": {
+      "multimodal": "medical_multimodal_vectors"
+    },
+    "distance_metric": "cosine",
+    "description": "向量数据库配置"
+  },
+  
+  "processing_settings": {
+    "text": {
+      "max_length": 512,
+      "batch_size": 32,
+      "preprocessing": {
+        "remove_special_chars": true,
+        "normalize_whitespace": true,
+        "remove_duplicates": true
+      },
+      "description": "文本处理配置"
+    },
+    "image": {
+      "resize": [224, 224],
+      "normalize": true,
+      "batch_size": 16,
+      "supported_formats": ["jpg", "jpeg", "png", "bmp", "dicom"],
+      "description": "图像处理配置"
+    },
+    "voice": {
+      "sample_rate": 16000,
+      "max_duration": 30,
+      "batch_size": 1,
+      "supported_formats": ["wav", "mp3", "m4a"],
+      "processing_pipeline": "whisper_to_text_then_embed",
+      "description": "语音处理配置：使用Whisper转文本，然后使用文本嵌入模型"
+    }
+  },
+  
+  "multimodal_options": {
+    "fuse_text_image": true,
+    "fusion_method": "concat",
+    "normalize_embeddings": true,
+    "save_separate_embeddings": true,
+    "description": "多模态融合配置"
+  },
+  
+  "quality_analyzer": {
+    "min_length": 10,
+    "max_length_ratio": 1.2,
+    "model_max_tokens": 2300,
+    "semantic_similarity_threshold": 0.95,
+    "batch_size": 32,
+    "irrelevant_keywords": ["金融", "游戏", "娱乐", "体育", "政治", "军事", "科技"],
+    "special_char_ratio_threshold": 0.3,
+    "medical_keywords": ["疾病", "症状", "治疗", "诊断", "药物", "医院", "医生", "患者", "健康", "医疗"],
+    "encoding": "utf-8",
+    "token_overhead": 10,
+    "description": "数据质量分析配置"
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "file": "embedding_service.log",
+    "max_size": "10MB",
+    "backup_count": 5,
+    "description": "日志配置"
+  },
+  
+  "network_settings": {
+    "proxy": null,
+    "download_timeout": 30,
+    "max_retries": 3,
+    "use_local_only": true,
+    "description": "网络设置，禁用外网下载"
+  },
+  
+  "file_paths": {
+    "processed_reports": "image_text_data/processed/processed_reports.csv",
+    "train_reports": "dialogue_data/dialogue_train.csv", 
+    "test_reports": "dialogue_data/dialogue_test.csv",
+    "processed_images": "image_text_data/processed/processed_images.npy",
+    "train_images": "image_text_data/processed/train_images.npy",
+    "test_images": "image_text_data/processed/test_images.npy",
+    "image_embeddings": "image_text_data/embeddings/image_embeddings.npy",
+    "description": "具体文件路径配置"
+  },
+  
+  "TEXT_EMBEDDING_MODEL": "../../../aimodels/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+  "IMAGE_EMBEDDING_MODEL": "../../../aimodels/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+  "IMAGE_EMBEDDER_TYPE": "openclip",
+  "IMAGE_EMBEDDER_DEVICE": "cpu",
+  "MULTIMODAL_VECTOR_DB_PATH": "../../../datas/chroma_db",
+  "TEXT_VECTOR_DB_PATH": "../../../datas/chroma_db",
+  "IMAGE_VECTOR_DB_PATH": "../../../datas/chroma_db",
+  "MULTIMODAL_COLLECTION_NAME": "medical_multimodal_vectors",
+  "MAPPING_FILE": "../../../datas/chroma_db/image_text_mapping.json"
+}

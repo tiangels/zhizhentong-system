@@ -1,0 +1,28 @@
+{
+  "summarization_service": {
+    "model_path": null,
+    "max_length": 300,
+    "min_length": 50
+  },
+  "llm_service": {
+    "device": "cuda",
+    "model_path": "FreedomIntelligence/Apollo-0.5B",
+    "max_length": 2048,
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "top_k": 50,
+    "repetition_penalty": 1.1,
+    "timeout": 600
+  },
+  "service_mode": "optimized",
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8003,
+    "reload": false,
+    "log_level": "info"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  }
+}

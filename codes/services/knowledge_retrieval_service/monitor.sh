@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# RAG检索增强系统监控脚本
+# 知识检索系统监控脚本
 
 # 颜色定义
 RED='\033[0;31m'
@@ -28,13 +28,13 @@ log_error() {
 
 # 检查服务状态
 check_service_status() {
-    log_info "检查RAG服务状态..."
+    log_info "检查知识检索服务状态..."
     
-    if curl -f http://localhost:8000/health >/dev/null 2>&1; then
-        log_success "RAG服务运行正常"
+    if curl -f http://localhost:8002/health >/dev/null 2>&1; then
+        log_success "知识检索服务运行正常"
         return 0
     else
-        log_error "RAG服务未运行或异常"
+        log_error "知识检索服务未运行或异常"
         return 1
     fi
 }
@@ -43,11 +43,11 @@ check_service_status() {
 check_process_status() {
     log_info "检查进程状态..."
     
-    if pgrep -f "start_rag_service.py" > /dev/null; then
-        log_success "RAG服务进程正在运行"
-        echo "进程ID: $(pgrep -f start_rag_service.py)"
+    if pgrep -f "start_retrieval_service.py" > /dev/null; then
+        log_success "知识检索服务进程正在运行"
+        echo "进程ID: $(pgrep -f start_retrieval_service.py)"
     else
-        log_error "RAG服务进程未运行"
+        log_error "知识检索服务进程未运行"
     fi
 }
 
@@ -67,8 +67,8 @@ check_port_status() {
 check_resource_usage() {
     log_info "检查资源使用情况..."
     
-    if pgrep -f "start_rag_service.py" > /dev/null; then
-        pid=$(pgrep -f start_rag_service.py)
+    if pgrep -f "start_retrieval_service.py" > /dev/null; then
+        pid=$(pgrep -f start_retrieval_service.py)
         echo "CPU使用率: $(ps -p $pid -o %cpu --no-headers)%"
         echo "内存使用: $(ps -p $pid -o %mem --no-headers)%"
         echo "内存大小: $(ps -p $pid -o rss --no-headers) KB"
@@ -81,11 +81,11 @@ check_resource_usage() {
 check_logs() {
     log_info "检查日志文件..."
     
-    if [ -f "logs/rag_service.log" ]; then
+    if [ -f "logs/retrieval_service.log" ]; then
         log_success "日志文件存在"
-        echo "日志文件大小: $(du -h logs/rag_service.log | cut -f1)"
+        echo "日志文件大小: $(du -h logs/retrieval_service.log | cut -f1)"
         echo "最后10行日志:"
-        tail -10 logs/rag_service.log
+        tail -10 logs/retrieval_service.log
     else
         log_warning "日志文件不存在"
     fi
@@ -123,9 +123,9 @@ show_system_info() {
 performance_test() {
     log_info "执行性能测试..."
     
-    if [ -f "test_rag_service.py" ]; then
+    if [ -f "test_retrieval_service.py" ]; then
         echo "运行性能测试..."
-        /opt/anaconda3/bin/conda run -n nlp python test_rag_service.py --performance
+        /opt/anaconda3/bin/conda run -n nlp python test_retrieval_service.py --performance
     else
         log_warning "性能测试文件不存在"
     fi
@@ -134,7 +134,7 @@ performance_test() {
 # 主监控函数
 monitor() {
     echo "=========================================="
-    echo "    RAG检索增强系统监控面板"
+    echo "    知识检索系统监控面板"
     echo "=========================================="
     echo ""
     
@@ -175,7 +175,7 @@ realtime_monitor() {
 
 # 显示帮助
 show_help() {
-    echo "RAG检索增强系统监控脚本"
+    echo "知识检索系统监控脚本"
     echo ""
     echo "用法: $0 [选项]"
     echo ""

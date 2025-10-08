@@ -14,6 +14,7 @@ const navItems = computed(() => {
   const items = [
     { path: '/dashboard', title: '仪表盘', icon: 'fas fa-tachometer-alt' },
     { path: '/chat', title: '智能问诊', icon: 'fas fa-comments' },
+    { path: '/patients', title: '就诊人管理', icon: 'fas fa-users' },
     { path: '/profile', title: '个人资料', icon: 'fas fa-user' },
     { path: '/settings', title: '系统设置', icon: 'fas fa-cog' },
   ]

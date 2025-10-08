@@ -1,0 +1,96 @@
+{
+  "version": "2.0.0",
+  "description": "统一模型配置文件",
+  "last_updated": "2025-01-17",
+  
+  "models": {
+    "text_embedding": {
+      "model_name": "BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+      "huggingface_id": "microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+      "local_model_path": "../../aimodels/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+      "max_length": 512,
+      "batch_size": 32,
+      "vector_dim": 512,
+      "use_local_only": true,
+      "description": "文本嵌入模型配置"
+    },
+    "image_embedding": {
+      "model_name": "BiomedCLIP-PubMedBERT_256-vit_base_patch16_224", 
+      "huggingface_id": "microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+      "local_model_path": "../../aimodels/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+      "image_size": 224,
+      "batch_size": 16,
+      "vector_dim": 512,
+      "use_local_only": true,
+      "description": "图像嵌入模型配置"
+    },
+    "voice_to_text": {
+      "model_name": "whisper-tiny",
+      "huggingface_id": "openai/whisper-tiny",
+      "local_model_path": "../../../codes/aimodels/whisper-tiny",
+      "sample_rate": 16000,
+      "batch_size": 1,
+      "use_local_only": true,
+      "description": "语音转文本模型配置"
+    },
+    "llm": {
+      "model_name": "Apollo-0.5B",
+      "huggingface_id": "FreedomIntelligence/Apollo-0.5B",
+      "local_model_path": "../../../codes/aimodels/Apollo-0.5B",
+      "max_length": 2048,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 50,
+      "repetition_penalty": 1.1,
+      "timeout": 600,
+      "use_local_only": true,
+      "description": "大语言模型配置"
+    },
+    "summarization": {
+      "model_name": "Falconsai_text_summarization",
+      "huggingface_id": "Falconsai/text_summarization",
+      "local_model_path": "../../../codes/aimodels/Falconsai_text_summarization",
+      "max_length": 100,
+      "min_length": 30,
+      "num_beams": 4,
+      "temperature": 0.7,
+      "early_stopping": true,
+      "use_medical_summarization": true,
+      "medical_max_length": 50,
+      "timeout": 300,
+      "use_local_only": true,
+      "description": "文本摘要模型配置"
+    },
+    "semantic_model": {
+      "model_name": "paraphrase-multilingual-MiniLM-L12-v2",
+      "huggingface_id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "local_model_path": "../../../codes/aimodels/quality_analysis_models/paraphrase-multilingual-MiniLM-L12-v2",
+      "vector_dim": 512,
+      "use_local_only": true,
+      "description": "语义相似度计算模型"
+    },
+    "classifier_model": {
+      "model_name": "distilbert-base-multilingual-cased",
+      "huggingface_id": "distilbert/distilbert-base-multilingual-cased", 
+      "local_model_path": "../../../codes/aimodels/quality_analysis_models/distilbert-base-multilingual-cased",
+      "use_local_only": true,
+      "description": "文本分类和质量评估模型"
+    },
+    "semantic_chunking": {
+      "model_name": "ernie-3.0-base-zh",
+      "huggingface_id": "nghuyong/ernie-3.0-base-zh",
+      "local_model_path": "../../../codes/aimodels/ernie-3.0-base-zh",
+      "max_length": 512,
+      "vector_dim": 768,
+      "use_local_only": true,
+      "description": "ERNIE语义切分模型-用于文档语义切分和相似度计算"
+    }
+  },
+  
+  "device": "cpu",
+  "use_local_only": true,
+  "fallback": {
+    "use_fallback": true,
+    "fallback_model": "tfidf"
+  }
+}

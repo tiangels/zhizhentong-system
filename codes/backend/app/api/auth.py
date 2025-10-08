@@ -21,7 +21,7 @@ router = APIRouter(prefix="/auth", tags=["认证"])
 security = HTTPBearer()
 
 
-@router.post("/register", response_model=UserResponse, summary="用户注册")
+@router.post("/register", response_model=UserLoginResponse, summary="用户注册")
 async def register(
     user_data: UserCreate,
     db: Session = Depends(get_db)
@@ -65,17 +65,55 @@ async def register(
     db.commit()
     db.refresh(new_user)
     
-    return UserResponse(
-        id=str(new_user.id),
-        username=new_user.username,
-        email=new_user.email,
-        full_name=new_user.full_name,
-        phone=new_user.phone,
-        avatar_url=new_user.avatar_url,
-        is_active=new_user.is_active,
-        is_verified=new_user.is_verified,
-        created_at=new_user.created_at,
-        updated_at=new_user.updated_at
+    # 注册成功后，自动生成访问令牌
+    access_token_expires = timedelta(minutes=auth_manager.access_token_expire_minutes)
+    access_token = auth_manager.create_access_token(
+        data={"sub": str(new_user.id)},
+        expires_delta=access_token_expires
+    )
+    
+    # 生成刷新令牌
+    refresh_token = auth_manager.create_refresh_token(
+        data={"sub": str(new_user.id)}
+    )
+    
+    # 创建用户会话
+    expires_at = datetime.utcnow() + timedelta(days=auth_manager.refresh_token_expire_days)
+    session = auth_manager.create_user_session(
+        db=db,
+        user_id=str(new_user.id),
+        refresh_token=refresh_token,
+        expires_at=expires_at
+    )
+    
+    # 缓存用户信息
+    cache_key = f"user:{new_user.id}"
+    user_info = {
+        "id": str(new_user.id),
+        "username": new_user.username,
+        "email": new_user.email,
+        "full_name": new_user.full_name,
+        "is_active": new_user.is_active
+    }
+    set_cache(cache_key, str(user_info), expire=3600)  # 缓存1小时
+    
+    return UserLoginResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=auth_manager.access_token_expire_minutes * 60,
+        user=UserResponse(
+            id=str(new_user.id),
+            username=new_user.username,
+            email=new_user.email,
+            full_name=new_user.full_name,
+            phone=new_user.phone,
+            avatar_url=new_user.avatar_url,
+            is_active=new_user.is_active,
+            is_verified=new_user.is_verified,
+            created_at=new_user.created_at,
+            updated_at=new_user.updated_at
+        )
     )
 
 

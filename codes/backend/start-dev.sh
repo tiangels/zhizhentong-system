@@ -47,7 +47,8 @@ fi
 if command -v /opt/anaconda3/bin/conda &> /dev/null; then
     if /opt/anaconda3/bin/conda info --envs | grep -q "nlp"; then
         echo -e "${GREEN}✅ 找到conda环境 'nlp'，正在激活...${NC}"
-        /opt/anaconda3/bin/conda activate nlp
+        eval "$(/opt/anaconda3/bin/conda shell.bash hook)"
+        conda activate nlp
         echo -e "${GREEN}✅ conda环境已激活${NC}"
     else
         echo -e "${YELLOW}⚠️  conda环境 'nlp' 不存在${NC}"
@@ -61,7 +62,13 @@ fi
 
 # 安装依赖
 echo -e "${YELLOW}📦 安装Python依赖...${NC}"
-/opt/anaconda3/bin/conda run -n nlp python -m pip install -r requirements.txt
+if command -v /opt/anaconda3/bin/conda &> /dev/null && /opt/anaconda3/bin/conda info --envs | grep -q "nlp"; then
+    # 使用激活的conda环境
+    python -m pip install -r requirements.txt
+else
+    # 使用conda run命令
+    /opt/anaconda3/bin/conda run -n nlp python -m pip install -r requirements.txt
+fi
 
 # 创建必要的目录
 echo -e "${YELLOW}📁 创建必要目录...${NC}"
@@ -70,7 +77,13 @@ mkdir -p logs uploads
 # 检查数据库文件
 if [ ! -f "zhizhentong.db" ]; then
     echo -e "${YELLOW}🔄 初始化数据库...${NC}"
-    /opt/anaconda3/bin/conda run -n nlp python create_tables.py
+    if command -v /opt/anaconda3/bin/conda &> /dev/null && /opt/anaconda3/bin/conda info --envs | grep -q "nlp"; then
+        # 使用激活的conda环境
+        python create_tables.py
+    else
+        # 使用conda run命令
+        /opt/anaconda3/bin/conda run -n nlp python create_tables.py
+    fi
 fi
 
 # 启动后端服务
@@ -80,4 +93,10 @@ echo -e "${GREEN}✅ API文档: http://localhost:8000/docs${NC}"
 echo ""
 
 # 启动服务
-/opt/anaconda3/bin/conda run -n nlp python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+if command -v /opt/anaconda3/bin/conda &> /dev/null && /opt/anaconda3/bin/conda info --envs | grep -q "nlp"; then
+    # 使用激活的conda环境
+    python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+else
+    # 使用conda run命令
+    /opt/anaconda3/bin/conda run -n nlp python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+fi

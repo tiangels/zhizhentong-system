@@ -152,7 +152,7 @@ curl -X POST "http://localhost:8000/query" \
 - Uvicorn 0.20+
 
 ### 模型配置
-- 确保模型路径正确: `ai_models/llm_models/Medical_Qwen3_17B`
+- 确保模型路径正确: `aimodels/Medical_Qwen3_17B`
 - 检查模型文件完整性
 - 确保有足够的GPU内存
 

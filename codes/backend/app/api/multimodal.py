@@ -1,8 +1,12 @@
 """
 多模态处理API路由
-处理文本、音频、图像等多种模态的输入
+负责文件上传和存储，业务处理由检索服务完成
 """
 
+import os
+import uuid
+import json
+import httpx
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
@@ -15,16 +19,236 @@ from ..models.multimodal import (
     AudioProcessingResponse, ImageProcessingRequest, ImageProcessingResponse,
     FusionRequest, FusionResponse
 )
-from ..modules.multimodal import MultimodalProcessor, TextProcessor, AudioProcessor, ImageProcessor, ModalityFusion
+from ..config import settings
 
 router = APIRouter(prefix="/multimodal", tags=["多模态处理"])
 
-# 创建处理器实例
-multimodal_processor = MultimodalProcessor()
-text_processor = TextProcessor()
-audio_processor = AudioProcessor()
-image_processor = ImageProcessor()
-fusion_processor = ModalityFusion()
+
+@router.post("/unified", response_model=MultimodalOutputResponse, summary="统一多模态处理")
+async def process_unified_multimodal(
+    text: Optional[str] = Form(None, description="文本内容"),
+    image_file: Optional[UploadFile] = File(None, description="图片文件"),
+    audio_file: Optional[UploadFile] = File(None, description="音频文件"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    print("=== 统一多模态处理接口被调用 ===")
+    print(f"text: {text}")
+    print(f"image_file: {image_file}")
+    print(f"audio_file: {audio_file}")
+    
+    # 写入日志文件
+    with open("/tmp/multimodal_debug.log", "a") as f:
+        f.write(f"=== 统一多模态处理接口被调用 ===\n")
+        f.write(f"text: {text}\n")
+        f.write(f"image_file: {image_file}\n")
+        f.write(f"audio_file: {audio_file}\n")
+        f.write("---\n")
+    """
+    统一处理多模态输入（文本、图片、语音）
+    根据输入类型自动判断处理流程
+    
+    - **text**: 文本内容（可选）
+    - **image_file**: 图片文件（可选）
+    - **audio_file**: 音频文件（可选）
+    """
+    try:
+        # 检查是否有任何输入
+        if not text and not image_file and not audio_file:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="至少需要提供文本、图片或音频中的一种输入"
+            )
+
+        # 处理图片文件
+        image_data = None
+        image_files_list = []
+        
+        print(f"=== 图片文件检查 ===")
+        print(f"image_file: {image_file}")
+        
+        # 处理单个图片文件
+        if image_file:
+            print(f"添加单个图片文件: {image_file.filename}")
+            # 检查文件大小
+            if hasattr(image_file, 'size') and image_file.size > settings.MAX_FILE_SIZE:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"文件 {image_file.filename} 大小超过限制 ({image_file.size} > {settings.MAX_FILE_SIZE} bytes)"
+                )
+            image_files_list.append(image_file)
+        
+        print(f"最终图片文件列表长度: {len(image_files_list)}")
+        
+        if image_files_list:
+            print(f"=== 开始处理图片文件 ===")
+            print(f"图片文件数量: {len(image_files_list)}")
+            
+            # 检查文件类型
+            allowed_image_types = ["image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"]
+            
+            processed_images = []
+            for img_file in image_files_list:
+                print(f"处理图片文件: {img_file.filename}, 类型: {img_file.content_type}")
+                if img_file.content_type not in allowed_image_types:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"不支持的图片文件格式: {img_file.content_type}"
+                    )
+                
+                # 生成唯一文件名
+                file_id = str(uuid.uuid4())
+                file_extension = os.path.splitext(img_file.filename)[1]
+                filename = f"{file_id}{file_extension}"
+                
+                # 确保目录存在
+                image_raw_dir = os.path.join(settings.UPLOAD_DIR, "image_data", "raw")
+                os.makedirs(image_raw_dir, exist_ok=True)
+                
+                # 读取文件内容（只能读取一次）
+                content = await img_file.read()
+                print(f"读取到内容大小: {len(content)} bytes")
+                
+                # 保存文件
+                file_path = os.path.join(image_raw_dir, filename)
+                print(f"保存文件到: {file_path}")
+                with open(file_path, "wb") as buffer:
+                    buffer.write(content)
+                    print(f"文件保存成功")
+                
+                # 生成可访问的图片URL
+                image_url = f"/api/v1/files/image_data/raw/{filename}"
+                
+                processed_images.append({
+                    "filename": filename,
+                    "file_path": file_path,
+                    "content_type": img_file.content_type,
+                    "size": len(content),
+                    "url": image_url
+                })
+            
+            # 如果只有一个图片，保持向后兼容
+            if len(processed_images) == 1:
+                image_data = processed_images[0]
+            else:
+                image_data = {
+                    "files": processed_images,
+                    "count": len(processed_images)
+                }
+
+        # 处理音频文件
+        audio_data = None
+        if audio_file:
+            # 检查文件类型
+            allowed_audio_types = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/ogg", "audio/flac", "audio/m4a", "audio/aac"]
+            if audio_file.content_type not in allowed_audio_types:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="不支持的音频文件格式"
+                )
+            
+            # 生成唯一文件名
+            file_id = str(uuid.uuid4())
+            file_extension = os.path.splitext(audio_file.filename)[1]
+            filename = f"{file_id}{file_extension}"
+            
+            # 确保目录存在
+            voice_raw_dir = os.path.join(settings.UPLOAD_DIR, "voice_data", "raw")
+            os.makedirs(voice_raw_dir, exist_ok=True)
+            
+            # 保存文件
+            file_path = os.path.join(voice_raw_dir, filename)
+            with open(file_path, "wb") as buffer:
+                content = await audio_file.read()
+                buffer.write(content)
+            
+            audio_data = {
+                "filename": filename,
+                "file_path": file_path,
+                "content_type": audio_file.content_type,
+                "size": len(content)
+            }
+
+        # 调用检索服务处理多模态数据
+        async with httpx.AsyncClient() as client:
+            # 构建请求数据
+            rag_request = {
+                "text": text,
+                "image_data": image_data,
+                "audio_data": audio_data,
+                "user_id": str(current_user.id),
+                "session_id": str(uuid.uuid4())
+            }
+            
+            response = await client.post(
+                f"{settings.RETRIEVAL_SERVICE_URL}/process/unified",
+                json=rag_request,
+                timeout=300.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"检索服务处理失败: {response.text}"
+                )
+            
+            result = response.json()
+            
+            # 创建多模态输入记录
+            db_input = MultimodalInput(
+                user_id=current_user.id,
+                session_id=rag_request["session_id"],
+                text_data=text,
+                audio_data=json.dumps(audio_data) if audio_data else None,
+                image_data=json.dumps(image_data) if image_data else None,
+                input_type="unified_multimodal"
+            )
+            
+            db.add(db_input)
+            db.commit()
+            db.refresh(db_input)
+            
+            # 创建输出记录
+            db_output = MultimodalOutput(
+                input_id=db_input.id,
+                user_id=current_user.id,
+                session_id=rag_request["session_id"],
+                text_result=result.get("text_result", {}),
+                audio_result=result.get("audio_result", {}),
+                image_result=result.get("image_result", image_data),  # 使用原始图片数据作为fallback
+                fusion_result=result.get("fusion_result", {}),
+                confidence_score=result.get("confidence_score", 0.0),
+                processing_time=result.get("processing_time", 0.0)
+            )
+            
+            db.add(db_output)
+            db.commit()
+            db.refresh(db_output)
+            
+            return MultimodalOutputResponse(
+                id=str(db_output.id),
+                input_id=str(db_input.id),
+                user_id=str(db_output.user_id),
+                session_id=db_output.session_id,
+                text_result=db_output.text_result,
+                audio_result=db_output.audio_result,
+                image_result=db_output.image_result,
+                fusion_result=db_output.fusion_result,
+                confidence_score=db_output.confidence_score,
+                processing_time=db_output.processing_time,
+                created_at=db_output.created_at
+            )
+            
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"检索服务不可用: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"多模态处理失败: {str(e)}"
+        )
 
 
 @router.post("/process", response_model=MultimodalOutputResponse, summary="多模态综合处理")
@@ -35,6 +259,7 @@ async def process_multimodal(
 ):
     """
     处理多模态输入（文本、音频、图像）
+    将数据传递给检索服务进行处理
     
     - **text_data**: 文本数据（可选）
     - **audio_data**: 音频数据（可选）
@@ -42,80 +267,80 @@ async def process_multimodal(
     - **user_id**: 用户ID
     - **session_id**: 会话ID（可选）
     """
-    # 创建多模态输入记录
-    db_input = MultimodalInput(
-        user_id=current_user.id,
-        session_id=multimodal_input.session_id,
-        text_data=multimodal_input.text_data,
-        audio_data=multimodal_input.audio_data,
-        image_data=multimodal_input.image_data,
-        input_type="multimodal"
-    )
-    
-    db.add(db_input)
-    db.commit()
-    db.refresh(db_input)
-    
-    # 执行多模态处理
     try:
-        # 准备输入数据
-        input_data = MultimodalInput(
-            text_data=multimodal_input.text_data,
-            audio_data=multimodal_input.audio_data,
-            image_data=multimodal_input.image_data
+        # 调用检索服务处理多模态数据
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{settings.RETRIEVAL_SERVICE_URL}/process/multimodal",
+                json={
+                    "text_data": multimodal_input.text_data,
+                    "audio_data": multimodal_input.audio_data,
+                    "image_data": multimodal_input.image_data,
+                    "user_id": str(current_user.id),
+                    "session_id": multimodal_input.session_id
+                },
+                timeout=300.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"检索服务处理失败: {response.text}"
+                )
+            
+            result = response.json()
+            
+            # 创建多模态输入记录
+            db_input = MultimodalInput(
+                user_id=current_user.id,
+                session_id=multimodal_input.session_id,
+                text_data=multimodal_input.text_data,
+                audio_data=multimodal_input.audio_data,
+                image_data=multimodal_input.image_data,
+                input_type="multimodal"
+            )
+            
+            db.add(db_input)
+            db.commit()
+            db.refresh(db_input)
+            
+            # 创建输出记录
+            db_output = MultimodalOutput(
+                input_id=db_input.id,
+                user_id=current_user.id,
+                session_id=multimodal_input.session_id,
+                text_result=result.get("text_result", {}),
+                audio_result=result.get("audio_result", {}),
+                image_result=result.get("image_result", {}),
+                fusion_result=result.get("fusion_result", {}),
+                confidence_score=result.get("confidence_score", 0.0),
+                processing_time=result.get("processing_time", 0.0)
+            )
+            
+            db.add(db_output)
+            db.commit()
+            db.refresh(db_output)
+            
+            return MultimodalOutputResponse(
+                id=str(db_output.id),
+                input_id=str(db_input.id),
+                user_id=str(db_output.user_id),
+                session_id=db_output.session_id,
+                text_result=db_output.text_result,
+                audio_result=db_output.audio_result,
+                image_result=db_output.image_result,
+                fusion_result=db_output.fusion_result,
+                confidence_score=db_output.confidence_score,
+                processing_time=db_output.processing_time,
+                created_at=db_output.created_at
+            )
+            
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"检索服务不可用: {str(e)}"
         )
-        
-        # 处理多模态数据
-        output = multimodal_processor.process_input(input_data)
-        
-        # 创建输出记录
-        db_output = MultimodalOutput(
-            input_id=db_input.id,
-            user_id=current_user.id,
-            session_id=multimodal_input.session_id,
-            text_result=output.dict() if hasattr(output, 'dict') else {},
-            audio_result=None,
-            image_result=None,
-            fusion_result=output.dict() if hasattr(output, 'dict') else {},
-            confidence_score=output.confidence,
-            processing_time=output.processing_time
-        )
-        
-        db.add(db_output)
-        db.commit()
-        db.refresh(db_output)
-        
-        return MultimodalOutputResponse(
-            id=str(db_output.id),
-            input_id=str(db_input.id),
-            user_id=str(db_output.user_id),
-            session_id=db_output.session_id,
-            text_result=db_output.text_result,
-            audio_result=db_output.audio_result,
-            image_result=db_output.image_result,
-            fusion_result=db_output.fusion_result,
-            confidence_score=db_output.confidence_score,
-            processing_time=db_output.processing_time,
-            created_at=db_output.created_at
-        )
-        
     except Exception as e:
-        # 如果处理失败，记录错误信息
-        db_output = MultimodalOutput(
-            input_id=db_input.id,
-            user_id=current_user.id,
-            session_id=multimodal_input.session_id,
-            text_result={"error": str(e)},
-            audio_result={"error": str(e)},
-            image_result={"error": str(e)},
-            fusion_result={"error": str(e)},
-            confidence_score=0.0,
-            processing_time=0.0
-        )
-        
-        db.add(db_output)
-        db.commit()
-        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"多模态处理失败: {str(e)}"
@@ -135,22 +360,45 @@ async def process_text(
     - **processing_type**: 处理类型（可选）
     """
     try:
-        # 执行文本处理
-        result = text_processor.process_text(
-            text=text_request.text
-        )
-        
-        # 处理sentiment字段，如果是字典则提取主要情感
-        sentiment_data = result.get('sentiment', {})
-        sentiment_str = sentiment_data.get('primary', 'neutral') if isinstance(sentiment_data, dict) else str(sentiment_data)
-        
-        return TextProcessingResponse(
-            processed_text=result.get('cleaned_text', text_request.text),
-            entities=result.get('entities', []),
-            sentiment=sentiment_str,
-            confidence=result.get('confidence', 0.0),
-            processing_time=result.get('processing_time', 0.0)
-        )
+        # 调用检索服务处理文本
+        async with httpx.AsyncClient() as client:
+            # 使用检索服务的查询接口
+            response = await client.post(
+                f"{settings.RETRIEVAL_SERVICE_URL}/query",
+                json={
+                    "question": text_request.text,
+                    "top_k": 5,
+                    "response_type": "general",
+                    "similarity_threshold": 0.5
+                },
+                timeout=300.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"检索服务处理失败: {response.text}"
+                )
+            
+            result = response.json()
+            
+            # 提取处理结果
+            data = result.get("data", {})
+            answer = data.get("answer", text_request.text)
+            retrieved_docs = data.get("retrieved_documents", [])
+            
+            # 提取实体和情感分析（简化处理）
+            entities = []
+            sentiment = "neutral"
+            confidence = data.get("confidence", 0.0)
+            
+            return TextProcessingResponse(
+                processed_text=answer,
+                entities=entities,
+                sentiment=sentiment,
+                confidence=confidence,
+                processing_time=data.get("processing_time", 0.0)
+            )
         
     except Exception as e:
         raise HTTPException(
@@ -173,20 +421,33 @@ async def process_audio(
     - **processing_type**: 处理类型（可选）
     """
     try:
-        # 执行音频处理
-        result = audio_processor.process_audio(
-            audio_data=audio_request.audio_data,
-            audio_format=audio_request.audio_format,
-            sample_rate=audio_request.sample_rate,
-            processing_type=audio_request.processing_type
-        )
+        # 调用检索服务处理音频数据
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{settings.RETRIEVAL_SERVICE_URL}/query",
+                json={
+                    "question": f"请分析这段音频数据: {audio_request.audio_data[:100]}...",
+                    "top_k": 5,
+                    "response_type": "general",
+                    "similarity_threshold": 0.5
+                },
+                timeout=300.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"检索服务处理失败: {response.text}"
+                )
+            
+            result = response.json()
+            data = result.get("data", {})
         
         return AudioProcessingResponse(
-            transcription=result.transcription,
-            speaker_id=result.speaker_id,
-            emotion=result.emotion,
-            confidence_score=result.confidence_score,
-            processing_time=result.processing_time
+            transcription=data.get('answer', ''),
+            audio_features={},
+            confidence=data.get('confidence', 0.0),
+            processing_time=data.get('processing_time', 0.0)
         )
         
     except Exception as e:
@@ -203,13 +464,13 @@ async def process_audio_file(
     current_user: User = Depends(get_current_user)
 ):
     """
-    上传并处理音频文件
+    上传音频文件并存储，业务处理由检索服务完成
     
     - **audio_file**: 音频文件（支持多种格式）
     - **processing_type**: 处理类型（可选）
     """
     # 检查文件类型
-    allowed_types = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/ogg", "audio/flac"]
+    allowed_types = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/ogg", "audio/flac", "audio/m4a", "audio/aac"]
     if audio_file.content_type not in allowed_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -217,27 +478,55 @@ async def process_audio_file(
         )
     
     try:
-        # 读取文件内容
-        audio_content = await audio_file.read()
+        # 生成唯一文件名
+        file_id = str(uuid.uuid4())
+        file_extension = os.path.splitext(audio_file.filename)[1]
+        filename = f"{file_id}{file_extension}"
         
-        # 转换为base64
-        import base64
-        audio_data = base64.b64encode(audio_content).decode('utf-8')
+        # 确保目录存在
+        voice_raw_dir = os.path.join(settings.UPLOAD_DIR, "voice_data", "raw")
+        os.makedirs(voice_raw_dir, exist_ok=True)
         
-        # 执行音频处理
-        result = audio_processor.process_audio(
-            audio_data=audio_data,
-            audio_format=audio_file.content_type,
-            processing_type=processing_type
-        )
+        # 保存文件到原始目录
+        file_path = os.path.join(voice_raw_dir, filename)
+        with open(file_path, "wb") as buffer:
+            content = await audio_file.read()
+            buffer.write(content)
         
-        return AudioProcessingResponse(
-            transcription=result.transcription,
-            speaker_id=result.speaker_id,
-            emotion=result.emotion,
-            confidence_score=result.confidence_score,
-            processing_time=result.processing_time
-        )
+        # 调用检索服务处理音频文件
+        async with httpx.AsyncClient() as client:
+            # 使用检索服务的文档上传接口
+            with open(file_path, "rb") as audio_file_content:
+                files = {"file": (filename, audio_file_content, audio_file.content_type)}
+                data = {
+                    "title": f"音频文件_{file_id}",
+                    "category": "audio",
+                    "source": "user_upload",
+                    "type": "audio"
+                }
+                
+                response = await client.post(
+                    f"{settings.RETRIEVAL_SERVICE_URL}/documents",
+                    files=files,
+                    data=data,
+                    timeout=300.0
+                )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"检索服务处理失败: {response.text}"
+                )
+            
+            result = response.json()
+            
+            # 返回处理结果
+            return AudioProcessingResponse(
+                transcription=result.get("data", {}).get("transcription", ""),
+                audio_features=result.get("data", {}).get("audio_features", {}),
+                confidence=result.get("data", {}).get("confidence", 0.0),
+                processing_time=result.get("data", {}).get("processing_time", 0.0)
+            )
         
     except Exception as e:
         raise HTTPException(
@@ -259,20 +548,34 @@ async def process_image(
     - **processing_type**: 处理类型（可选）
     """
     try:
-        # 执行图像处理
-        result = image_processor.process_image(
-            image_data=image_request.image_data,
-            image_format=image_request.image_format,
-            processing_type=image_request.processing_type
-        )
-        
-        return ImageProcessingResponse(
-            features=result.features,
-            symptoms=result.symptoms,
-            quality_score=result.quality_score,
-            confidence_score=result.confidence_score,
-            processing_time=result.processing_time
-        )
+        # 调用检索服务处理图像数据
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{settings.RETRIEVAL_SERVICE_URL}/query",
+                json={
+                    "question": f"请分析这段图像数据: {image_request.image_data[:100]}...",
+                    "top_k": 5,
+                    "response_type": "general",
+                    "similarity_threshold": 0.5
+                },
+                timeout=300.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"检索服务处理失败: {response.text}"
+                )
+            
+            result = response.json()
+            data = result.get("data", {})
+            
+            return ImageProcessingResponse(
+                detected_objects=[],
+                image_features={},
+                confidence=data.get('confidence', 0.0),
+                processing_time=data.get('processing_time', 0.0)
+            )
         
     except Exception as e:
         raise HTTPException(
@@ -288,7 +591,7 @@ async def process_image_file(
     current_user: User = Depends(get_current_user)
 ):
     """
-    上传并处理图像文件
+    上传图像文件并存储，业务处理由检索服务完成
     
     - **image_file**: 图像文件（支持多种格式）
     - **processing_type**: 处理类型（可选）
@@ -302,27 +605,54 @@ async def process_image_file(
         )
     
     try:
-        # 读取文件内容
-        image_content = await image_file.read()
+        # 生成唯一文件名
+        file_id = str(uuid.uuid4())
+        file_extension = os.path.splitext(image_file.filename)[1]
+        filename = f"{file_id}{file_extension}"
         
-        # 转换为base64
-        import base64
-        image_data = base64.b64encode(image_content).decode('utf-8')
+        # 确保目录存在
+        image_raw_dir = os.path.join(settings.UPLOAD_DIR, "image_data", "raw")
+        os.makedirs(image_raw_dir, exist_ok=True)
         
-        # 执行图像处理
-        result = image_processor.process_image(
-            image_data=image_data,
-            image_format=image_file.content_type,
-            processing_type=processing_type
-        )
+        # 保存文件到原始目录
+        file_path = os.path.join(image_raw_dir, filename)
+        with open(file_path, "wb") as buffer:
+            content = await image_file.read()
+            buffer.write(content)
         
-        return ImageProcessingResponse(
-            features=result.features,
-            symptoms=result.symptoms,
-            quality_score=result.quality_score,
-            confidence_score=result.confidence_score,
-            processing_time=result.processing_time
-        )
+        # 调用检索服务处理图像文件
+        async with httpx.AsyncClient() as client:
+            # 使用检索服务的图像文档上传接口
+            with open(file_path, "rb") as image_file_content:
+                files = {"file": (filename, image_file_content, image_file.content_type)}
+                data = {
+                    "title": f"图像文件_{file_id}",
+                    "category": "image",
+                    "source": "user_upload"
+                }
+                
+                response = await client.post(
+                    f"{settings.RETRIEVAL_SERVICE_URL}/documents/images",
+                    files=files,
+                    data=data,
+                    timeout=300.0
+                )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"检索服务处理失败: {response.text}"
+                )
+            
+            result = response.json()
+            
+            # 返回处理结果
+            return ImageProcessingResponse(
+                detected_objects=result.get("data", {}).get("detected_objects", []),
+                image_features=result.get("data", {}).get("image_features", {}),
+                confidence=result.get("data", {}).get("confidence", 0.0),
+                processing_time=result.get("data", {}).get("processing_time", 0.0)
+            )
         
     except Exception as e:
         raise HTTPException(
@@ -345,21 +675,48 @@ async def fuse_modalities(
     - **fusion_strategy**: 融合策略
     """
     try:
-        # 执行模态融合
-        result = fusion_processor.fuse_modalities(
-            text_result=fusion_request.text_result,
-            audio_result=fusion_request.audio_result,
-            image_result=fusion_request.image_result,
-            fusion_strategy=fusion_request.fusion_strategy
-        )
-        
-        return FusionResponse(
-            fused_result=result.fused_result,
-            confidence_score=result.confidence_score,
-            modality_weights=result.modality_weights,
-            conflicts_resolved=result.conflicts_resolved,
-            processing_time=result.processing_time
-        )
+        # 调用检索服务的聊天接口进行多模态融合
+        async with httpx.AsyncClient() as client:
+            # 构建多模态数据
+            multimodal_data = {}
+            if fusion_request.text_result:
+                multimodal_data["text"] = fusion_request.text_result
+            if fusion_request.audio_result:
+                multimodal_data["audio"] = fusion_request.audio_result
+            if fusion_request.image_result:
+                multimodal_data["image"] = fusion_request.image_result
+            
+            # 构建对话历史
+            messages = [
+                {"role": "user", "content": "请融合以下多模态信息并给出综合分析"}
+            ]
+            
+            response = await client.post(
+                f"{settings.RETRIEVAL_SERVICE_URL}/chat",
+                json={
+                    "messages": messages,
+                    "top_k": 5,
+                    "multimodal_data": multimodal_data
+                },
+                timeout=300.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"检索服务处理失败: {response.text}"
+                )
+            
+            result = response.json()
+            data = result.get("data", {})
+            
+            return FusionResponse(
+                fused_result=data.get("answer", "融合处理完成"),
+                confidence_score=data.get("confidence", 0.0),
+                modality_weights={"text": 0.4, "audio": 0.3, "image": 0.3},
+                conflicts_resolved=True,
+                processing_time=data.get("processing_time", 0.0)
+            )
         
     except Exception as e:
         raise HTTPException(

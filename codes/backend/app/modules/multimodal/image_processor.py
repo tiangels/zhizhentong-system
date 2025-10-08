@@ -27,20 +27,26 @@ class ImageProcessor:
         # 模拟图像特征提取
         self.feature_dimension = 512
     
-    def process_image(self, image_data: bytes) -> Dict[str, Any]:
+    def process_image(self, image_data: str, image_format: str = None, processing_type: str = None) -> Dict[str, Any]:
         """
         处理图像
         
         Args:
-            image_data: 图像数据（bytes）
+            image_data: 图像数据（base64编码的字符串）
+            image_format: 图像格式
+            processing_type: 处理类型
             
         Returns:
             Dict[str, Any]: 处理结果
         """
         start_time = time.time()
         
+        # 解码base64图像数据
+        import base64
+        image_bytes = base64.b64decode(image_data)
+        
         # 图像预处理
-        processed_image = self._preprocess_image(image_data)
+        processed_image = self._preprocess_image(image_bytes)
         
         # 对象检测
         detected_objects = self._detect_objects(processed_image)

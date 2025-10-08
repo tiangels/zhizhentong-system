@@ -1,6 +1,6 @@
 """
-大语言模型服务模块
-负责调用Qwen2-0.5B-Medical-MLX模型进行文本生成
+统一大语言模型服务模块
+整合标准版、优化版和超精简版LLM服务
 """
 
 import os
@@ -12,14 +12,34 @@ import time
 from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import warnings
 
 # 忽略警告
 warnings.filterwarnings("ignore")
 
-# 配置日志
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# 使用统一日志配置
+import sys
+from pathlib import Path
+
+# 添加common模块到路径
+current_file = Path(__file__)
+common_dir = current_file.parent.parent.parent.parent / "common"
+sys.path.insert(0, str(common_dir))
+
+# 添加项目根目录到路径
+import sys
+from pathlib import Path
+current_file = Path(__file__)
+project_root = current_file.parent.parent.parent.parent  # 回到codes目录
+sys.path.insert(0, str(project_root))
+
+from common.log_config import setup_logging, get_logger
+setup_logging("retrieval_service")
+logger = get_logger(__name__)
+
+# 导入提示词引擎
+from .prompt_engine import PromptEngine
 
 
 class TimeoutException(Exception):
@@ -28,18 +48,23 @@ class TimeoutException(Exception):
 
 
 class LLMService:
-    """大语言模型服务类，负责文本生成"""
+    """统一大语言模型服务类，支持多种模式"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], mode: str = "optimized"):
         """
         初始化大语言模型服务
         
         Args:
             config: 配置字典，包含模型路径、设备等配置信息
+            mode: 服务模式 ("standard", "optimized", "ultra_compact")
         """
         self.config = config
+        self.mode = mode
         self.device = config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
-        self.model_path = config.get('model_path', '/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/codes/ai_models/llm_models/Qwen3-1.7b-Medical-R1-sft')
+        
+        # 尝试从统一模型配置加载
+        self.model_path = self._get_model_path_from_config()
+        
         self.max_length = config.get('max_length', 2048)
         self.temperature = config.get('temperature', 0.7)
         self.top_p = config.get('top_p', 0.9)
@@ -50,13 +75,83 @@ class LLMService:
         self.model = None
         self.tokenizer = None
         
+        # 初始化提示词引擎
+        self.prompt_engine = PromptEngine(mode)
+        
         # 初始化模型
         self._load_model()
+
+    def get_model_stats(self) -> Dict[str, Any]:
+        """返回模型的基本运行状态，供健康检查使用。"""
+        try:
+            stats: Dict[str, Any] = {
+                "mode": self.mode,
+                "device": self.device,
+                "model_path": self.model_path or "",
+                "max_length": self.max_length,
+                "temperature": self.temperature,
+                "top_p": self.top_p,
+                "top_k": self.top_k,
+                "repetition_penalty": self.repetition_penalty,
+                "loaded": bool(self.model is not None and self.tokenizer is not None)
+            }
+            try:
+                if self.model is not None:
+                    stats["num_parameters"] = sum(p.numel() for p in self.model.parameters())
+            except Exception:
+                pass
+            return stats
+        except Exception as e:
+            logger.error(f"获取LLM模型状态失败: {e}")
+            return {"error": str(e)}
+    
+    def _get_model_path_from_config(self) -> str:
+        """从统一模型配置获取模型路径"""
+        try:
+            import json
+            from pathlib import Path
+            
+            # 尝试从统一模型配置加载
+            model_config_path = Path(__file__).parent.parent.parent.parent / "ai_models" / "llm_models" / "model_config.json"
+            logger.info(f"检查统一模型配置文件: {model_config_path}")
+            logger.info(f"配置文件存在: {model_config_path.exists()}")
+            
+            if model_config_path.exists():
+                with open(model_config_path, 'r', encoding='utf-8') as f:
+                    model_config = json.load(f)
+                
+                # 获取LLM模型配置
+                llm_config = model_config.get('models', {}).get('llm', {})
+                model_path = llm_config.get('model_path')
+                logger.info(f"从统一配置获取的模型路径: {model_path}")
+                
+                if model_path:
+                    # 检查是否为Hugging Face模型名称（包含"/"但不存在的本地路径）
+                    is_huggingface_model = "/" in model_path and not os.path.exists(model_path)
+                    logger.info(f"是否为Hugging Face模型: {is_huggingface_model}")
+                    logger.info(f"本地路径是否存在: {os.path.exists(model_path) if not is_huggingface_model else 'N/A'}")
+                    
+                    if is_huggingface_model or os.path.exists(model_path):
+                        logger.info(f"使用统一配置中的LLM模型: {model_path}")
+                        return model_path
+            
+            # 回退到配置中的默认路径
+            default_path = self.config.get('model_path', 'FreedomIntelligence/Apollo-0.5B')
+            logger.info(f"使用配置中的LLM模型路径: {default_path}")
+            return default_path
+            
+        except Exception as e:
+            logger.warning(f"加载统一模型配置失败: {e}")
+            # 回退到配置中的默认路径
+            default_path = self.config.get('model_path', 'FreedomIntelligence/Apollo-0.5B')
+            return default_path
     
     def _load_model(self):
         """加载大语言模型"""
         try:
-            logger.info(f"Loading Qwen2 Medical model from {self.model_path}")
+            logger.info(f"Loading Apollo-0.5B model from {self.model_path}")
+            logger.info(f"Model path type: {type(self.model_path)}")
+            logger.info(f"Model path value: '{self.model_path}'")
             
             # 检查模型路径是否存在（支持本地路径和Hugging Face模型名称）
             is_huggingface_model = "/" in self.model_path and not os.path.exists(self.model_path)
@@ -69,7 +164,8 @@ class LLMService:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_path,
                 trust_remote_code=True,
-                use_fast=False
+                use_fast=False,
+                local_files_only=True
             )
             
             # 设置pad_token
@@ -78,14 +174,29 @@ class LLMService:
             
             # 加载模型
             logger.info("Loading model...")
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_path,
-                torch_dtype=torch.bfloat16 if self.device == 'cuda' else torch.float32,
-                device_map="auto" if self.device == 'cuda' else None,
-                trust_remote_code=True,
-                low_cpu_mem_usage=True,
-                use_safetensors=True
-            )
+            try:
+                # 首先尝试使用safetensors加载
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_path,
+                    torch_dtype=torch.bfloat16 if self.device == 'cuda' else torch.float16,
+                    device_map="auto" if self.device == 'cuda' else None,
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True,
+                    use_safetensors=True,
+                    local_files_only=True
+                )
+            except Exception as e:
+                logger.warning(f"Safetensors加载失败，尝试其他方式: {e}")
+                # 如果safetensors失败，尝试不使用safetensors
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_path,
+                    torch_dtype=torch.bfloat16 if self.device == 'cuda' else torch.float16,
+                    device_map="auto" if self.device == 'cuda' else None,
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True,
+                    use_safetensors=False,
+                    local_files_only=True
+                )
             
             # 如果使用CPU，将模型移动到CPU
             if self.device == 'cpu':
@@ -94,7 +205,7 @@ class LLMService:
             # 设置为评估模式
             self.model.eval()
             
-            logger.info("Qwen2 Medical model loaded successfully")
+            logger.info("Apollo-0.5B model loaded successfully")
             
         except Exception as e:
             logger.error(f"Error loading model: {e}")
@@ -147,13 +258,14 @@ class LLMService:
                     top_k=gen_top_k,
                     repetition_penalty=gen_repetition_penalty,
                     do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id,
+                    pad_token_id=self.tokenizer.pad_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
                     bos_token_id=self.tokenizer.bos_token_id,
                     use_cache=True
                 )
                 
                 # 生成文本
+                logger.info(f"开始生成文本，输入长度: {inputs.size(1)}")
                 with torch.no_grad():
                     outputs = self.model.generate(
                         inputs,
@@ -161,12 +273,37 @@ class LLMService:
                         attention_mask=torch.ones_like(inputs)
                     )
                 
-                # 解码输出
-                generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                logger.info(f"生成完成，输出形状: {outputs.shape}")
                 
-                # 移除输入部分，只返回生成的部分
-                if generated_text.startswith(prompt):
-                    generated_text = generated_text[len(prompt):].strip()
+                # 解码输出 - 只解码新生成的部分
+                input_length = inputs.size(1)
+                generated_tokens = outputs[0][input_length:]  # 只取新生成的tokens
+                
+                logger.info(f"生成的tokens数量: {len(generated_tokens)}")
+                logger.info(f"生成的tokens: {generated_tokens.tolist()[:20]}...")  # 显示前20个token
+                
+                # 过滤掉特殊tokens（pad, eos, bos等）
+                special_tokens = {self.tokenizer.pad_token_id, self.tokenizer.eos_token_id, self.tokenizer.bos_token_id}
+                if hasattr(self.tokenizer, 'unk_token_id') and self.tokenizer.unk_token_id is not None:
+                    special_tokens.add(self.tokenizer.unk_token_id)
+                
+                # 过滤掉特殊tokens
+                filtered_tokens = [token for token in generated_tokens if token not in special_tokens]
+                logger.info(f"过滤后的tokens数量: {len(filtered_tokens)}")
+                logger.info(f"过滤后的tokens: {filtered_tokens[:20]}...")
+                
+                if len(filtered_tokens) == 0:
+                    logger.warning("所有生成的tokens都是特殊tokens，尝试使用原始tokens解码")
+                    generated_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=False)
+                else:
+                    generated_text = self.tokenizer.decode(filtered_tokens, skip_special_tokens=True)
+                
+                logger.info(f"解码后文本长度: {len(generated_text)}")
+                logger.info(f"解码后文本内容: {generated_text[:200]}...")
+                
+                # 清理生成的文本
+                generated_text = generated_text.strip()
+                logger.info(f"清理后文本: {generated_text[:100]}...")
                 
                 result[0] = generated_text
                 
@@ -234,192 +371,77 @@ class LLMService:
             logger.error(f"LLM通用响应生成失败: {e}")
             return "抱歉，我无法回答您的问题。建议您咨询专业医生获取准确信息。"
     
-    def generate_medical_response(self, query: str, context: str = "", 
-                                response_type: str = "diagnosis") -> str:
+    def generate_knowledge_response(self, query: str, context: str = "", 
+                                   response_type: str = "general") -> str:
         """
-        生成医疗响应
+        生成知识检索响应（移除医疗诊断功能）
         
         Args:
             query: 用户查询
             context: 检索到的上下文
-            response_type: 响应类型 (diagnosis, advice, explanation)
+            response_type: 响应类型 (general, explanation, summary)
             
         Returns:
-            医疗响应文本
+            知识检索响应文本
         """
         try:
             logger.info("=" * 40)
-            logger.info("🤖 开始LLM医疗响应生成流程")
+            logger.info("🤖 开始LLM知识检索响应生成流程")
             logger.info("=" * 40)
             logger.info(f"输入参数: query='{query}', context长度={len(context)}, response_type='{response_type}'")
+            logger.info(f"使用模式: {self.mode}")
             
-            # 1. 获取用户输入
-            logger.info("步骤1: 获取用户输入")
-            logger.info(f"用户查询: '{query}'")
-            logger.info(f"查询长度: {len(query)} 字符")
-            logger.info(f"上下文长度: {len(context)} 字符")
-            logger.info(f"响应类型: {response_type}")
-            logger.info(f"完整上下文内容: {context}")
-            logger.info("步骤1: 获取用户输入完成")
-            
-            # 2. 用户数据处理
-            logger.info("步骤2: 开始构建医疗提示词")
-            logger.info(f"查询长度: {len(query)} 字符")
-            logger.info(f"上下文长度: {len(context)} 字符")
-            logger.info(f"响应类型: {response_type}")
-            
-            # 构建医疗提示词
-            if response_type == "diagnosis":
-                prompt = self._build_diagnosis_prompt(query, context)
-                logger.info("构建诊断提示词")
-            elif response_type == "advice":
-                prompt = self._build_advice_prompt(query, context)
-                logger.info("构建建议提示词")
-            elif response_type == "explanation":
-                prompt = self._build_explanation_prompt(query, context)
-                logger.info("构建解释提示词")
-            else:
-                prompt = self._build_general_prompt(query, context)
-                logger.info("构建通用提示词")
+            # 使用提示词引擎构建提示词
+            prompt = self.prompt_engine.build_retrieval_prompt(query, context, response_type)
             
             logger.info(f"提示词构建完成，总长度: {len(prompt)} 字符")
             logger.info(f"完整提示词内容: {prompt}")
-            logger.info("步骤2: 构建医疗提示词完成")
-            
-            # 3. 调用大模型生成回答
-            logger.info("步骤3: 开始调用LLM生成医疗响应")
-            logger.info(f"LLM调用参数: max_new_tokens=128, temperature=0.7, timeout=600")
-            logger.info(f"发送给LLM的完整提示词: {prompt}")
             
             # 生成响应
             response = self.generate_text(
                 prompt,
-                max_new_tokens=128,  # 减少token数量
-                temperature=0.7,
-                timeout=600  # 增加超时时间到600秒
+                max_new_tokens=256,
+                temperature=0.9,  # 提高温度以获得更好的生成效果
+                top_p=0.95,       # 提高top_p
+                timeout=600
             )
             
-            logger.info(f"LLM生成完成")
-            logger.info(f"原始响应长度: {len(response)} 字符")
-            logger.info(f"LLM生成的原始响应: {response}")
-            
-            # 清理响应内容
-            cleaned_response = response.strip()
-            logger.info(f"清理后响应长度: {len(cleaned_response)} 字符")
-            logger.info(f"清理后响应内容: {cleaned_response}")
-            
-            logger.info("步骤3: 调用LLM生成医疗响应完成")
+            logger.info(f"LLM生成完成，响应长度: {len(response)} 字符")
             logger.info("=" * 40)
-            logger.info("🤖 LLM医疗响应生成流程完成")
+            logger.info("🤖 LLM知识检索响应生成流程完成")
             logger.info("=" * 40)
             
-            return cleaned_response
+            return response.strip()
             
         except Exception as e:
-            logger.error(f"LLM医疗响应生成失败: {e}")
-            logger.error(f"错误详情: {str(e)}")
+            logger.error(f"LLM知识检索响应生成失败: {e}")
             logger.info("=" * 40)
-            logger.info("🤖 LLM医疗响应生成流程失败")
+            logger.info("🤖 LLM知识检索响应生成流程失败")
             logger.info("=" * 40)
-            return "抱歉，我无法生成医疗建议。请咨询专业医生。"
-    
-    def _build_diagnosis_prompt(self, query: str, context: str) -> str:
-        """构建诊断提示词"""
-        prompt = f"""作为一位专业的医疗AI助手，请根据以下信息提供诊断建议：
-        用户症状描述：{query}
-
-        相关医学知识：
-        {context}
-
-        请提供：
-        1. 可能的疾病诊断
-        2. 诊断依据
-        3. 建议的检查项目
-        4. 注意事项
-
-        注意：这仅供参考，不能替代专业医生的诊断。"""
-        
-        return prompt
-    
-    def _build_advice_prompt(self, query: str, context: str) -> str:
-        """构建建议提示词"""
-        prompt = f"""作为一位专业的医疗AI助手，请根据以下信息提供健康建议：
-
-        用户问题：{query}
-
-        相关医学知识：
-        {context}
-
-        请提供：
-        1. 健康建议
-        2. 预防措施
-        3. 生活方式建议
-        4. 何时需要就医
-
-        注意：这仅供参考，不能替代专业医生的建议。"""
-        
-        return prompt
-    
-    def _build_explanation_prompt(self, query: str, context: str) -> str:
-        """构建解释提示词"""
-        prompt = f"""作为一位专业的医疗AI助手，请解释以下医学概念：
-
-        用户问题：{query}
-
-        相关医学知识：
-        {context}
-
-        请提供：
-        1. 详细解释
-        2. 相关机制
-        3. 临床表现
-        4. 治疗原则
-
-        注意：这仅供参考，不能替代专业医生的解释。"""
-        
-        return prompt
+            return "抱歉，我无法回答您的问题。请稍后重试。"
     
     def _build_general_prompt(self, query: str, context: str) -> str:
         """构建通用提示词"""
-        prompt = f"""你是一位专业的医疗AI助手，具有丰富的医学知识和临床经验。请根据用户的问题和提供的医学知识，给出专业、准确、实用的医疗建议。
+        prompt = f"""知识检索AI助手，基于检索到的知识回答问题。
 
-        用户问题：{query}
+问题：{query}
 
-        相关医学知识：
-        {context}
+相关知识：{context}
 
-        请按照以下专业格式回答：
+回答格式：
+1. 问题回应
+2. 知识分析
+3. 相关建议
+4. 免责声明
 
-        【症状分析】
-        - 根据用户描述，分析可能的症状特点
-        - 结合医学知识，说明症状的可能原因
-
-        【专业建议】
-        - 提供具体的医疗建议和注意事项
-        - 建议必要的检查或观察要点
-        - 给出生活调理建议
-
-        【就医指导】
-        - 明确什么情况下需要及时就医
-        - 建议就诊科室和检查项目
-        - 提醒紧急情况的处理方式
-
-        【注意事项】
-        - 强调此回答仅供参考，不能替代专业诊断
-        - 提醒用户及时咨询专业医生
-
-        要求：
-        - 语言专业但易懂，避免过于复杂的医学术语
-        - 回答要具体实用，不要泛泛而谈
-        - 基于提供的医学知识进行回答，不要编造信息
-        - 保持医疗建议的准确性和安全性"""
+要求：基于检索到的知识进行回答，避免超出知识范围。"""
         
         return prompt
     
     def chat_with_context(self, messages: List[Dict[str, str]], 
                          context: str = "") -> str:
         """
-        基于上下文的对话
+        基于上下文的对话（使用统一提示词引擎）
         
         Args:
             messages: 对话历史
@@ -429,16 +451,16 @@ class LLMService:
             回复文本
         """
         try:
-            # 构建对话提示词
-            prompt = self._build_chat_prompt(messages, context)
+            # 使用提示词引擎构建对话提示词
+            prompt = self.prompt_engine.build_chat_prompt(messages, context)
             
             # 生成回复
             response = self.generate_text(
                 prompt,
-                max_new_tokens=1024,  # 增加生成长度，支持更详细的回答
-                temperature=0.3,      # 降低温度，提高回答的准确性和一致性
-                top_p=0.8,           # 调整top_p，提高回答质量
-                repetition_penalty=1.1  # 避免重复
+                max_new_tokens=512,
+                temperature=0.3,
+                top_p=0.8,
+                repetition_penalty=1.1
             )
             
             return response
@@ -448,61 +470,27 @@ class LLMService:
             return "抱歉，我无法理解您的问题。请重新描述您的问题。"
     
     def _build_chat_prompt(self, messages: List[Dict[str, str]], context: str) -> str:
-        """构建对话提示词"""
-        prompt = """你是一位专业的医疗AI助手，具有丰富的医学知识和临床经验。
-
-        """
-        
-        # 添加医学知识上下文
+        """构建精简版对话提示词（优化：减少60% token消耗）"""
         if context:
-            prompt += f"相关医学知识：\n{context}\n\n"
-            prompt += """请根据用户的问题和提供的医学知识，给出专业、准确、实用的医疗建议。
+            prompt = f"""你是医疗AI助手，基于医学知识提供专业建议。
 
-            请按照以下专业格式回答：
+知识：{context}
 
-            【症状分析】
-            - 根据用户描述，分析可能的症状特点
-            - 结合医学知识，说明症状的可能原因
+回答格式：
+【症状分析】- 分析症状特点
+【专业建议】- 医疗建议和注意事项  
+【就医指导】- 就医时机和科室
+【注意事项】- 仅供参考，需医生面诊
 
-            【专业建议】
-            - 提供具体的医疗建议和注意事项
-            - 建议必要的检查或观察要点
-            - 给出生活调理建议
-
-            【就医指导】
-            - 明确什么情况下需要及时就医
-            - 建议就诊科室和检查项目
-            - 提醒紧急情况的处理方式
-
-            【注意事项】
-            - 强调此回答仅供参考，不能替代专业诊断
-            - 提醒用户及时咨询专业医生
-
-            要求：
-            - 语言专业但易懂，避免过于复杂的医学术语
-            - 回答要具体实用，不要泛泛而谈
-            - 基于提供的医学知识进行回答，不要编造信息
-            - 保持医疗建议的准确性和安全性"""
+要求：专业易懂，基于知识回答，保持安全性"""
         else:
-            prompt += """请注意：我没有找到与用户问题相关的医学知识。
+            prompt = """你是医疗AI助手。如无相关医学知识，请：
+1. 理解用户问题
+2. 提供一般健康建议
+3. 建议咨询专业医生
+4. 强调仅供参考
 
-            请根据以下情况判断用户输入的性质：
-
-            1. 如果用户只是简单的问候（如"你好"、"您好"等），请友好地回应并引导用户描述具体的健康问题。
-
-            2. 如果用户询问的是医疗相关问题，但没有找到相关医学知识，请：
-            - 理解用户的问题和关注点
-            - 提供一般性的健康建议
-            - 强烈建议用户咨询专业医生
-            - 强调此回答仅供参考，不能替代专业诊断
-
-            3. 如果用户的问题不明确，请询问更多细节以便提供更好的帮助。
-
-            要求：
-            - 语言温和、专业
-            - 避免给出具体的诊断或治疗建议
-            - 重点强调咨询专业医生的重要性
-            - 保持回答的谨慎性和安全性"""
+请友好回应并引导用户描述具体健康问题。"""
         
         # 添加对话历史
         prompt += "\n\n对话历史：\n"
@@ -623,10 +611,10 @@ class LLMService:
             logger.error(f"Error getting model info: {e}")
             return {}
 
-    def generate_medical_response_stream(self, query: str, context: str = "",
+    def generate_knowledge_response_stream(self, query: str, context: str = "",
                                        response_type: str = "general"):
         """
-        流式生成医学回答
+        流式生成知识检索回答
         
         Args:
             query: 用户问题
@@ -638,7 +626,7 @@ class LLMService:
         """
         try:
             logger.info("=" * 40)
-            logger.info("🌊 开始LLM流式医疗响应生成流程")
+            logger.info("🌊 开始LLM流式知识检索响应生成流程")
             logger.info("=" * 40)
             logger.info(f"输入参数: query='{query}', context长度={len(context)}, response_type='{response_type}'")
             
@@ -753,16 +741,105 @@ class LLMService:
             yield f"生成文本时出错：{str(e)}"
 
 
+class OptimizedLLMService(LLMService):
+    """优化版大语言模型服务类，使用精简版提示词"""
+    
+    def __init__(self, config: Dict[str, Any]):
+        """初始化优化版LLM服务"""
+        super().__init__(config, mode="optimized")
+    
+    def generate_text(self, prompt: str, max_new_tokens: int = 256, 
+                     temperature: float = None, top_p: float = None, timeout: int = 300) -> str:
+        """
+        生成文本（优化版，支持超时处理）
+        
+        Args:
+            prompt: 输入提示词
+            max_new_tokens: 最大新token数
+            temperature: 温度参数
+            top_p: top_p参数
+            timeout: 超时时间（秒）
+            
+        Returns:
+            生成的文本
+        """
+        if temperature is None:
+            temperature = self.temperature
+        if top_p is None:
+            top_p = self.top_p
+            
+        try:
+            # 编码输入
+            inputs = self.tokenizer.encode(prompt, return_tensors='pt')
+            if self.device == 'cuda':
+                inputs = inputs.to(self.device)
+            
+            # 生成配置
+            generation_config = GenerationConfig(
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=self.top_k,
+                repetition_penalty=self.repetition_penalty,
+                do_sample=True,
+                pad_token_id=self.tokenizer.pad_token_id
+            )
+            
+            # 使用线程池执行生成，支持超时
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(
+                    self._generate_with_model,
+                    inputs, generation_config
+                )
+                
+                try:
+                    result = future.result(timeout=timeout)
+                    return result
+                except TimeoutError:
+                    raise TimeoutException(f"生成超时（{timeout}秒）")
+                    
+        except Exception as e:
+            logger.error(f"文本生成失败: {e}")
+            return f"生成失败: {str(e)}"
+    
+    def _generate_with_model(self, inputs, generation_config):
+        """在模型上执行生成"""
+        with torch.no_grad():
+            outputs = self.model.generate(
+                inputs,
+                generation_config=generation_config,
+                attention_mask=torch.ones_like(inputs)
+            )
+            
+            # 解码输出
+            generated_text = self.tokenizer.decode(
+                outputs[0][inputs.shape[1]:], 
+                skip_special_tokens=True
+            )
+            
+            return generated_text.strip()
+
+
+class UltraCompactLLMService(LLMService):
+    """超精简版大语言模型服务类"""
+    
+    def __init__(self, config: Dict[str, Any]):
+        """初始化超精简版LLM服务"""
+        super().__init__(config, mode="ultra_compact")
+
+
 class LLMServiceFactory:
-    """大语言模型服务工厂类"""
+    """统一大语言模型服务工厂类"""
     
     @staticmethod
-    def create_llm_service(config_path: str = None) -> LLMService:
+    def create_llm_service(config_path: str = None, config_dict: dict = None, mode: str = "optimized") -> LLMService:
         """
         创建大语言模型服务实例
         
         Args:
             config_path: 配置文件路径
+            config_dict: 配置字典（直接传递配置）
+            mode: 服务模式 ("standard", "optimized", "ultra_compact")
             
         Returns:
             大语言模型服务实例
@@ -770,7 +847,7 @@ class LLMServiceFactory:
         # 默认配置
         default_config = {
             'device': 'cuda' if torch.cuda.is_available() else 'cpu',
-            'model_path': '/Users/tiangels/AI/llm_learning_project/zhi_zhen_tong_system/codes/ai_models/llm_models/Qwen2-0.5B-Medical-MLX',
+            'model_path': 'FreedomIntelligence/Apollo-0.5B',
             'max_length': 2048,
             'temperature': 0.7,
             'top_p': 0.9,
@@ -779,26 +856,64 @@ class LLMServiceFactory:
             'timeout': 600
         }
         
-        # 如果提供了配置文件，则加载配置
-        if config_path and os.path.exists(config_path):
+        # 如果提供了配置字典，直接使用
+        if config_dict:
             try:
+                logger.info(f"Using provided config dict: {config_dict}")
+                default_config.update(config_dict)
+                logger.info(f"Updated default_config: {default_config}")
+            except Exception as e:
+                logger.warning(f"Error using config dict: {e}, using default config")
+        # 如果提供了配置文件，则加载配置
+        elif config_path and os.path.exists(config_path):
+            try:
+                logger.info(f"Loading config from: {config_path}")
                 with open(config_path, 'r', encoding='utf-8') as f:
                     full_config = json.load(f)
                 # 提取llm_service部分的配置
                 if 'llm_service' in full_config:
                     user_config = full_config['llm_service']
+                    logger.info(f"Found llm_service config: {user_config}")
                     default_config.update(user_config)
+                    logger.info(f"Updated default_config: {default_config}")
+                else:
+                    logger.warning("No llm_service config found in file")
             except Exception as e:
                 logger.warning(f"Error loading config file: {e}, using default config")
+        else:
+            logger.info(f"Config file not found or not provided: {config_path}")
         
-        return LLMService(default_config)
+        # 根据模式创建相应的服务实例
+        if mode == "optimized":
+            return OptimizedLLMService(default_config)
+        elif mode == "ultra_compact":
+            return UltraCompactLLMService(default_config)
+        else:
+            return LLMService(default_config, mode)
+
+
+class OptimizedLLMServiceFactory:
+    """优化版大语言模型服务工厂类（向后兼容）"""
+    
+    @staticmethod
+    def create_llm_service(config_path: str = None) -> OptimizedLLMService:
+        """
+        创建优化版大语言模型服务实例
+        
+        Args:
+            config_path: 配置文件路径
+            
+        Returns:
+            优化版大语言模型服务实例
+        """
+        return LLMServiceFactory.create_llm_service(config_path, "optimized")
 
 
 if __name__ == "__main__":
     # 测试大语言模型服务
     config = {
         'device': 'cpu',  # 使用CPU进行测试
-        'model_path': 'ai_models/llm_models/Qwen2-0.5B-Medical-MLX',
+        'model_path': 'FreedomIntelligence/Apollo-0.5B',
         'max_length': 1024,
         'temperature': 0.7
     }
@@ -811,14 +926,14 @@ if __name__ == "__main__":
         response = llm_service.generate_text(test_prompt, max_new_tokens=200)
         print(f"Generated response: {response}")
         
-        # 测试医疗响应生成
-        query = "我最近经常感到胸痛，这是什么原因？"
-        context = "胸痛可能由多种原因引起，包括心血管疾病、肺部疾病等。"
+        # 测试知识检索响应生成
+        query = "什么是机器学习？"
+        context = "机器学习是人工智能的一个分支，通过算法让计算机从数据中学习模式。"
         
-        medical_response = llm_service.generate_medical_response(
-            query, context, response_type="diagnosis"
+        knowledge_response = llm_service.generate_knowledge_response(
+            query, context, response_type="general"
         )
-        print(f"\nMedical response: {medical_response}")
+        print(f"\nKnowledge response: {knowledge_response}")
         
         # 获取模型信息
         model_info = llm_service.get_model_info()

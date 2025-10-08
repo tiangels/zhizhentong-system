@@ -1,4 +1,4 @@
-# RAG检索增强系统Docker镜像
+# 知识检索系统Docker镜像
 FROM python:3.9-slim
 
 # 设置工作目录
@@ -28,11 +28,11 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 # 暴露端口
-EXPOSE 8000
+EXPOSE 8002
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8002/health || exit 1
 
 # 启动命令
-CMD ["python", "start_rag_service.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "start_retrieval_service.py", "--host", "0.0.0.0", "--port", "8002"]

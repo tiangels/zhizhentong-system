@@ -17,7 +17,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('@/components/layout/AuthLayout.vue'),
+    component: () => import('@/components/layout/MainLayout.vue'),
     meta: { requiresAuth: true, title: '仪表盘' },
     children: [
       {
@@ -52,7 +52,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/chat',
     name: 'Chat',
-    component: () => import('@/components/layout/AuthLayout.vue'),
+    component: () => import('@/components/layout/MainLayout.vue'),
     meta: { requiresAuth: true, title: '智能问诊' },
     children: [
       {
@@ -86,7 +86,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/profile',
     name: 'Profile',
-    component: () => import('@/components/layout/AuthLayout.vue'),
+    component: () => import('@/components/layout/MainLayout.vue'),
     meta: { requiresAuth: true, title: '用户档案' },
     children: [
       {
@@ -100,7 +100,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/settings',
     name: 'Settings',
-    component: () => import('@/components/layout/AuthLayout.vue'),
+    component: () => import('@/components/layout/MainLayout.vue'),
     meta: { requiresAuth: true, title: '应用设置' },
     children: [
       {
@@ -108,6 +108,20 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsContent',
         component: () => import('@/views/settings/AppSettings.vue'),
         meta: { title: '应用设置' },
+      },
+    ],
+  },
+  {
+    path: '/patients',
+    name: 'Patients',
+    component: () => import('@/components/layout/MainLayout.vue'),
+    meta: { requiresAuth: true, title: '就诊人管理' },
+    children: [
+      {
+        path: '',
+        name: 'PatientManagement',
+        component: () => import('@/components/PatientManagement.vue'),
+        meta: { title: '就诊人管理' },
       },
     ],
   },

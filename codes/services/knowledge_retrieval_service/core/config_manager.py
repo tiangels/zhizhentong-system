@@ -1,6 +1,6 @@
 """
 统一配置管理模块
-负责管理RAG系统的所有配置，确保构建知识库模块和检索生成模块使用一致的配置
+负责管理知识检索系统的所有配置，确保构建知识库模块和检索生成模块使用一致的配置
 """
 
 import os
@@ -8,6 +8,18 @@ import json
 import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
+
+# 添加模型配置读取器路径
+project_root = Path(__file__).parent.parent.parent.parent.parent
+llm_models_path = project_root / "codes" / "ai_models" / "llm_models"
+import sys
+sys.path.insert(0, str(llm_models_path))
+
+try:
+    from model_config_reader import get_multimodal_embedding_model, get_text_generation_model
+    MODEL_CONFIG_AVAILABLE = True
+except ImportError:
+    MODEL_CONFIG_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +40,7 @@ class ConfigManager:
     def _get_default_config_path(self) -> str:
         """获取默认配置文件路径"""
         current_dir = Path(__file__).parent
-        return str(current_dir.parent / "api" / "config" / "rag_config.json")
+        return str(current_dir.parent / "api" / "config" / "retrieval_config.json")
     
     def _load_config(self) -> Dict[str, Any]:
         """加载配置文件"""
@@ -47,41 +59,63 @@ class ConfigManager:
     
     def _get_default_config(self) -> Dict[str, Any]:
         """获取默认配置"""
+        # 尝试从统一模型配置获取模型路径
+        try:
+            if MODEL_CONFIG_AVAILABLE:
+                multimodal_model = get_multimodal_embedding_model()
+                text_generation_model = get_text_generation_model()
+                multimodal_path = multimodal_model.get('model_path', 'microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
+                multimodal_name = multimodal_model.get('huggingface_id', 'microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
+                text_gen_path = text_generation_model.get('model_path', 'FreedomIntelligence/Apollo-0.5B')
+            else:
+                multimodal_path = 'microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224'
+                multimodal_name = 'microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224'
+                text_gen_path = 'FreedomIntelligence/Apollo-0.5B'
+        except:
+            multimodal_path = 'microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224'
+            multimodal_name = 'microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224'
+            text_gen_path = 'FreedomIntelligence/Apollo-0.5B'
+            
         return {
             "vector_service": {
                 "device": "auto",
                 "vector_dim": 768,
                 "batch_size": 32,
-                "text_model_path": "../../../codes/ai_models/llm_models/text2vec-base-chinese",
+                "text_model_path": multimodal_path,
                 "image_model_path": "clip-ViT-B-32",
                 "use_knowledge_base_service": True
             },
             "retrieval_service": {
                 "vector_dim": 768,
                 "max_results": 20,
-                "similarity_threshold": 0.7,
+                "similarity_threshold": 0.5,
                 "retrieval_strategy": "semantic",
-                "vector_db_path": "../../../datas/vector_databases/multimodal",
+                "vector_db_path": "../../../datas/chroma_db",
                 "collection_name": "medical_multimodal_vectors",
-                "model_name": "shibing624/text2vec-base-chinese"
+                "model_name": multimodal_name,
+                "es_weight": 0.6,
+                "vector_weight": 0.4,
+                "rrf_k": 60,
+                "max_es_results": 3,
+                "max_vector_results": 3
             },
             "llm_service": {
                 "device": "auto",
-                "model_path": "../../../ai_models/llm_models/Qwen2-0.5B-Medical-MLX",
+                "model_path": text_gen_path,
                 "max_length": 2048,
                 "temperature": 0.7,
                 "top_p": 0.9,
                 "top_k": 50,
                 "repetition_penalty": 1.1,
                 "timeout": 600,
-                "model_config_path": "../../../ai_models/llm_models/model_config.json"
+                "model_config_path": "../../../aimodels/model_config.json"
             },
             "knowledge_base": {
                 "base_dir": "../../../datas/medical_knowledge",
                 "text_data_dir": "text_data",
                 "image_data_dir": "image_text_data",
                 "voice_data_dir": "voice_data",
-                "vector_db_dir": "vector_databases"
+                "vector_db_dir": "chroma_db"
             },
             "api": {
                 "host": "0.0.0.0",

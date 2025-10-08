@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons-vue'
@@ -10,14 +10,16 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // 表单数据
-const formData = reactive<RegisterRequest & { confirmPassword: string; agree: boolean }>({
+const formData = reactive<RegisterRequest & { confirmPassword: string }>({
   username: '',
   email: '',
   password: '',
-  agreeToTerms: false,
   confirmPassword: '',
-  agree: false,
+  agreeToTerms: false,
 })
+
+// 表单引用
+const formRef = ref()
 
 // 表单验证规则
 const rules: any = {
@@ -37,7 +39,7 @@ const rules: any = {
     { required: true, message: '请确认密码', trigger: 'blur' },
     {
       validator: (_: any, value: string) => {
-        if (value !== formData.password) {
+        if (value && value !== formData.password) {
           return Promise.reject('两次输入的密码不一致')
         }
         return Promise.resolve()
@@ -45,7 +47,7 @@ const rules: any = {
       trigger: 'blur',
     },
   ],
-  agree: [
+  agreeToTerms: [
     {
       validator: (_: any, value: boolean) => {
         if (!value) {
@@ -59,28 +61,135 @@ const rules: any = {
 }
 
 // 处理注册
-const handleRegister = async (values: RegisterRequest) => {
+const handleRegister = async (values: any) => {
   try {
-    await authStore.register(values)
+    console.log('=== 注册调试信息 ===')
+    console.log('1. 表单提交的values参数:', values)
+    console.log('2. 当前formData状态:', JSON.stringify(formData, null, 2))
+    console.log('3. values是否为空:', !values || Object.keys(values).length === 0)
+
+    // 检查数据来源
+    let finalData
+    if (values && Object.keys(values).length > 0) {
+      console.log('4. 使用values数据')
+      finalData = {
+        username: values.username,
+        email: values.email,
+        password: values.password,
+        full_name: values.username,
+        phone: '',
+      }
+    } else {
+      console.log('4. values为空，使用formData数据')
+      finalData = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.username,
+        phone: '',
+      }
+    }
+
+    console.log('5. 最终发送给后端的数据:', finalData)
+    console.log('6. 数据验证:')
+    console.log('   - 用户名:', finalData.username, finalData.username ? '✅' : '❌')
+    console.log('   - 邮箱:', finalData.email, finalData.email ? '✅' : '❌')
+    console.log('   - 密码:', finalData.password ? '✅' : '❌')
+
+    await authStore.register(finalData)
     message.success('注册成功')
     router.push('/chat')
   } catch (error: any) {
+    console.error('注册错误:', error)
     message.error(error.message || '注册失败')
   }
+}
+
+// 手动验证表单
+const validateForm = async () => {
+  try {
+    await formRef.value.validate()
+    return true
+  } catch (error) {
+    console.log('表单验证失败:', error)
+    return false
+  }
+}
+
+// 调试表单状态
+const debugForm = () => {
+  console.log('=== 调试表单状态 ===')
+  console.log('1. formData:', JSON.stringify(formData, null, 2))
+  console.log('2. formRef.value:', formRef.value)
+
+  // 检查表单实例的字段值
+  if (formRef.value) {
+    const formValues = formRef.value.getFieldsValue()
+    console.log('3. 表单实例字段值:', formValues)
+  }
+
+  console.log('4. 表单验证状态:')
+
+  // 手动触发验证
+  formRef.value
+    ?.validate()
+    .then(() => {
+      console.log('✅ 表单验证通过')
+    })
+    .catch((errors: any) => {
+      console.log('❌ 表单验证失败:', errors)
+    })
+
+  // 检查每个字段的值
+  console.log('5. 字段值检查:')
+  console.log('   - username:', formData.username, formData.username ? '✅' : '❌')
+  console.log('   - email:', formData.email, formData.email ? '✅' : '❌')
+  console.log('   - password:', formData.password ? '✅' : '❌')
+  console.log('   - confirmPassword:', formData.confirmPassword ? '✅' : '❌')
+  console.log('   - agreeToTerms:', formData.agreeToTerms ? '✅' : '❌')
+}
+
+// 添加实时监控函数
+const monitorFormData = () => {
+  console.log('=== 实时监控表单数据 ===')
+  console.log('当前 formData:', formData)
+
+  // 监听 formData 的变化
+  const unwatch = watch(
+    formData,
+    (newVal, oldVal) => {
+      console.log('formData 发生变化:', { oldVal, newVal })
+    },
+    { deep: true }
+  )
+
+  return unwatch
 }
 </script>
 
 <template>
   <div class="register-page">
     <a-form
+      ref="formRef"
       :model="formData"
       :rules="rules"
       @finish="handleRegister"
       layout="vertical"
       class="register-form"
+      :validate-trigger="['blur', 'change']"
     >
       <a-form-item label="用户名" name="username">
-        <a-input v-model="formData.username" placeholder="请输入用户名" size="large">
+        <a-input
+          v-model="formData.username"
+          placeholder="请输入用户名"
+          size="large"
+          @input="
+            e => {
+              formData.username = e.target.value
+              console.log('用户名输入:', e.target.value)
+            }
+          "
+        >
           <template #prefix>
             <UserOutlined />
           </template>
@@ -88,7 +197,17 @@ const handleRegister = async (values: RegisterRequest) => {
       </a-form-item>
 
       <a-form-item label="邮箱" name="email">
-        <a-input v-model="formData.email" placeholder="请输入邮箱" size="large">
+        <a-input
+          v-model="formData.email"
+          placeholder="请输入邮箱"
+          size="large"
+          @input="
+            e => {
+              formData.email = e.target.value
+              console.log('邮箱输入:', e.target.value)
+            }
+          "
+        >
           <template #prefix>
             <MailOutlined />
           </template>
@@ -96,7 +215,17 @@ const handleRegister = async (values: RegisterRequest) => {
       </a-form-item>
 
       <a-form-item label="密码" name="password">
-        <a-input-password v-model="formData.password" placeholder="请输入密码" size="large">
+        <a-input-password
+          v-model="formData.password"
+          placeholder="请输入密码"
+          size="large"
+          @input="
+            e => {
+              formData.password = e.target.value
+              console.log('密码输入:', e.target.value)
+            }
+          "
+        >
           <template #prefix>
             <LockOutlined />
           </template>
@@ -108,6 +237,12 @@ const handleRegister = async (values: RegisterRequest) => {
           v-model="formData.confirmPassword"
           placeholder="请再次输入密码"
           size="large"
+          @input="
+            e => {
+              formData.confirmPassword = e.target.value
+              console.log('确认密码输入:', e.target.value)
+            }
+          "
         >
           <template #prefix>
             <LockOutlined />
@@ -115,8 +250,16 @@ const handleRegister = async (values: RegisterRequest) => {
         </a-input-password>
       </a-form-item>
 
-      <a-form-item>
-        <a-checkbox v-model="formData.agree">
+      <a-form-item name="agreeToTerms">
+        <a-checkbox
+          v-model="formData.agreeToTerms"
+          @change="
+            e => {
+              formData.agreeToTerms = e.target.checked
+              console.log('协议勾选:', e.target.checked)
+            }
+          "
+        >
           我已阅读并同意
           <a href="#" target="_blank">用户协议</a>
           和
@@ -133,6 +276,27 @@ const handleRegister = async (values: RegisterRequest) => {
           block
         >
           注册
+        </a-button>
+      </a-form-item>
+
+      <!-- 临时调试按钮 -->
+      <a-form-item>
+        <a-button
+          @click="debugForm"
+          size="large"
+          style="background: #ff4d4f; color: white; width: 100%"
+        >
+          调试表单状态
+        </a-button>
+      </a-form-item>
+
+      <a-form-item>
+        <a-button
+          @click="monitorFormData"
+          size="large"
+          style="background: #1890ff; color: white; width: 100%"
+        >
+          开始监控数据绑定
         </a-button>
       </a-form-item>
 

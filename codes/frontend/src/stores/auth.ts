@@ -79,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
         try {
           const { useChatStore } = await import('@/stores/chat')
           const chatStore = useChatStore()
-          chatStore.initializeUserData()
+          await chatStore.initializeUserData()
         } catch (chatError) {
           console.error('初始化用户 chat 数据失败:', chatError)
         }
@@ -117,7 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 注册
-  const register = async (userData: RegisterRequest) => {
+  const register = async (userData: any) => {
     try {
       isLoading.value = true
       error.value = null
@@ -126,8 +126,8 @@ export const useAuthStore = defineStore('auth', () => {
         username: userData.username,
         email: userData.email,
         password: userData.password,
-        confirmPassword: userData.confirmPassword,
-        agreeToTerms: userData.agreeToTerms,
+        full_name: userData.full_name,
+        phone: userData.phone,
       })
 
       // API服务已经将后端响应转换为包装格式

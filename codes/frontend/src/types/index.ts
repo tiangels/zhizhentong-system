@@ -167,6 +167,7 @@ export interface Message {
   content: string
   status: MessageStatus
   timestamp: string
+  messageData?: Record<string, any>
   metadata?: Record<string, any>
   createdAt: string
   updatedAt: string
@@ -180,6 +181,8 @@ export interface SendMessageRequest {
   content: string
   contentType?: MessageContentType
   type?: MessageType
+  messageType?: string
+  messageData?: Record<string, any>
   metadata?: Record<string, any>
 }
 

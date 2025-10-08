@@ -5,6 +5,7 @@ FastAPI主应用入口
 
 import time
 import logging
+from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
+from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import create_tables, check_database_connection
@@ -23,16 +25,64 @@ from .database import engine
 # 全局变量用于存储应用启动时间
 app_start_time = None
 
-# 配置日志
-logging.basicConfig(
-    level=getattr(logging, settings.LOG_LEVEL.upper()),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),  # 输出到控制台
-        logging.FileHandler(settings.LOG_FILE, encoding='utf-8')  # 输出到文件
-    ]
-)
-logger = logging.getLogger(__name__)
+# 导入统一日志配置
+import sys
+from pathlib import Path
+
+# 添加common模块到路径
+current_file = Path(__file__)
+common_dir = current_file.parent.parent.parent / "common"  # codes/common
+sys.path.insert(0, str(common_dir))
+
+try:
+    from log_config import (
+        setup_backend_service_logging, 
+        get_backend_logger, 
+        log_system_event, 
+        log_performance_metrics,
+        log_request,
+        log_response
+    )
+    # 初始化后端服务日志配置
+    backend_logger = setup_backend_service_logging(show_config_logs=True)
+    print("✅ 统一日志配置加载成功")
+except ImportError as e:
+    print(f"❌ 统一日志配置加载失败: {e}")
+    # 如果导入失败，使用简单的日志记录
+    import logging
+    backend_logger = logging.getLogger("backend")
+    
+    def log_system_event(message: str, **kwargs):
+        backend_logger.logger.info(f"系统事件: {message}")
+    
+    def log_performance_metrics(operation: str, duration: float, **kwargs):
+        backend_logger.logger.info(f"性能指标 - {operation}: {duration:.2f}秒")
+    
+    def log_request(method: str, path: str, user_id: str = None, request_data: dict = None, duration: float = None):
+        backend_logger.logger.info(f"HTTP请求: {method} {path} - 用户: {user_id}")
+    
+    def log_response(status_code: int, response_data: dict = None, error: str = None):
+        backend_logger.logger.info(f"HTTP响应: {status_code}")
+
+# 获取后端服务专用日志记录器（如果导入成功）
+try:
+    backend_logger = get_backend_logger()
+except NameError:
+    # 如果get_backend_logger未定义，使用上面创建的backend_logger
+    pass
+
+# 为后端服务添加标准日志方法
+def log_info(message: str):
+    """记录信息日志"""
+    backend_logger.log_system_event(message)
+
+def log_error(message: str):
+    """记录错误日志"""
+    backend_logger.log_system_event(f"ERROR: {message}", level="ERROR")
+
+def log_warning(message: str):
+    """记录警告日志"""
+    backend_logger.log_system_event(f"WARNING: {message}", level="WARNING")
 
 
 @asynccontextmanager
@@ -44,55 +94,142 @@ async def lifespan(app: FastAPI):
     
     # 启动时执行
     app_start_time = time.time()
-    logger.info("🚀 智诊通系统启动中...")
+    backend_logger.logger.info("🚀 智诊通系统启动中...")
     print("🚀 智诊通系统启动中...")
     
+    # 记录系统启动事件
+    log_system_event("系统启动开始", {
+        "start_time": datetime.now().isoformat(),
+        "environment": settings.ENVIRONMENT,
+        "debug_mode": settings.DEBUG
+    })
+    
     # 检查数据库连接
+    db_start_time = time.time()
     try:
         check_database_connection()
-        logger.info("✅ 数据库连接正常")
+        db_duration = time.time() - db_start_time
+        backend_logger.logger.info("✅ 数据库连接正常")
         print("✅ 数据库连接正常")
+        log_system_event("数据库连接检查", {
+            "status": "success",
+            "duration": f"{db_duration:.3f}s"
+        })
     except Exception as e:
-        logger.error(f"❌ 数据库连接失败: {e}")
+        db_duration = time.time() - db_start_time
+        backend_logger.logger.error(f"❌ 数据库连接失败: {e}")
         print(f"❌ 数据库连接失败: {e}")
+        log_system_event("数据库连接检查", {
+            "status": "failed",
+            "error": str(e),
+            "duration": f"{db_duration:.3f}s"
+        }, "ERROR")
         raise
     
     # 创建数据库表
+    table_start_time = time.time()
     try:
         await create_tables()
-        logger.info("✅ 数据库表创建完成")
+        table_duration = time.time() - table_start_time
+        backend_logger.logger.info("✅ 数据库表创建完成")
         print("✅ 数据库表创建完成")
+        log_system_event("数据库表创建", {
+            "status": "success",
+            "duration": f"{table_duration:.3f}s"
+        })
     except Exception as e:
-        logger.error(f"❌ 数据库表创建失败: {e}")
+        table_duration = time.time() - table_start_time
+        backend_logger.logger.error(f"❌ 数据库表创建失败: {e}")
         print(f"❌ 数据库表创建失败: {e}")
+        log_system_event("数据库表创建", {
+            "status": "failed",
+            "error": str(e),
+            "duration": f"{table_duration:.3f}s"
+        }, "ERROR")
         raise
     
     # 检查Redis连接
+    redis_start_time = time.time()
     try:
         redis_client.ping()
-        logger.info("✅ Redis连接正常")
+        redis_duration = time.time() - redis_start_time
+        backend_logger.logger.info("✅ Redis连接正常")
         print("✅ Redis连接正常")
+        log_system_event("Redis连接检查", {
+            "status": "success",
+            "duration": f"{redis_duration:.3f}s"
+        })
     except Exception as e:
-        logger.error(f"❌ Redis连接失败: {e}")
+        redis_duration = time.time() - redis_start_time
+        backend_logger.logger.error(f"❌ Redis连接失败: {e}")
         print(f"❌ Redis连接失败: {e}")
+        log_system_event("Redis连接检查", {
+            "status": "failed",
+            "error": str(e),
+            "duration": f"{redis_duration:.3f}s"
+        }, "ERROR")
         raise
     
-    logger.info("🎉 智诊通系统启动完成!")
+    # 记录系统启动完成
+    total_startup_time = time.time() - app_start_time
+    backend_logger.logger.info("🎉 智诊通系统启动完成!")
     print("🎉 智诊通系统启动完成!")
+    log_system_event("系统启动完成", {
+        "total_startup_time": f"{total_startup_time:.3f}s",
+        "database_check_time": f"{db_duration:.3f}s",
+        "table_creation_time": f"{table_duration:.3f}s",
+        "redis_check_time": f"{redis_duration:.3f}s"
+    })
+    
+    # 记录性能指标
+    log_performance_metrics("系统启动", {
+        "total_time": total_startup_time,
+        "database_check": db_duration,
+        "table_creation": table_duration,
+        "redis_check": redis_duration
+    })
     
     yield
     
     # 关闭时执行
+    shutdown_start_time = time.time()
     print("🔄 智诊通系统关闭中...")
+    log_system_event("系统关闭开始", {
+        "shutdown_time": datetime.now().isoformat()
+    })
     
     # 关闭Redis连接
+    redis_close_start = time.time()
     try:
         redis_client.close()
+        redis_close_duration = time.time() - redis_close_start
         print("✅ Redis连接已关闭")
+        log_system_event("Redis连接关闭", {
+            "status": "success",
+            "duration": f"{redis_close_duration:.3f}s"
+        })
     except Exception as e:
+        redis_close_duration = time.time() - redis_close_start
         print(f"❌ Redis连接关闭失败: {e}")
+        log_system_event("Redis连接关闭", {
+            "status": "failed",
+            "error": str(e),
+            "duration": f"{redis_close_duration:.3f}s"
+        }, "ERROR")
     
+    # 记录系统关闭完成
+    total_shutdown_time = time.time() - shutdown_start_time
     print("👋 智诊通系统已关闭")
+    log_system_event("系统关闭完成", {
+        "total_shutdown_time": f"{total_shutdown_time:.3f}s",
+        "redis_close_time": f"{redis_close_duration:.3f}s"
+    })
+    
+    # 记录性能指标
+    log_performance_metrics("系统关闭", {
+        "total_time": total_shutdown_time,
+        "redis_close": redis_close_duration
+    })
 
 
 # 创建FastAPI应用实例
@@ -107,7 +244,7 @@ app = FastAPI(
     - 🔐 **用户认证管理** - 用户注册、登录、会话管理
     - 💬 **智能对话管理** - 多轮对话、上下文跟踪、状态管理
     - 🏥 **智能诊断** - 症状分析、风险评估、诊断建议
-    - 📚 **知识库检索** - RAG技术、医疗知识检索
+    - 📚 **知识库检索** - 检索技术、医疗知识检索
     - 🎯 **多模态处理** - 文本、音频、图像综合处理
     - ⚙️ **系统管理** - 配置管理、用户偏好、操作日志
     
@@ -170,6 +307,14 @@ app.add_middleware(
     allowed_hosts=settings.ALLOWED_HOSTS
 )
 
+# 设置文件上传大小限制
+from fastapi import Request
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+# 配置文件上传大小限制
+app.state.max_file_size = settings.MAX_FILE_SIZE
+
 
 # 请求处理中间件
 @app.middleware("http")
@@ -179,15 +324,52 @@ async def add_process_time_header(request: Request, call_next):
     """
     start_time = time.time()
     
+    # 获取用户信息（如果有的话）
+    user_id = None
+    try:
+        # 尝试从请求头中获取用户ID
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            # 这里可以解析JWT token获取用户ID，暂时设为None
+            user_id = "authenticated_user"
+    except Exception:
+        pass
+    
     # 记录请求信息
-    logger.info(f"🔍 收到请求: {request.method} {request.url.path}")
-    logger.info(f"📋 请求头: {dict(request.headers)}")
+    backend_logger.logger.info(f"🔍 收到请求: {request.method} {request.url.path}")
+    backend_logger.logger.info(f"📋 请求头: {dict(request.headers)}")
+    
+    # 使用后端服务日志记录器记录请求
+    
+    # 获取请求数据（仅对POST/PUT请求）
+    request_data = None
+    if request.method in ["POST", "PUT", "PATCH"]:
+        try:
+            # 这里可以获取请求体，但要注意不要记录敏感信息
+            request_data = {"method": request.method, "path": request.url.path}
+        except Exception:
+            pass
+    
+    # 记录请求日志
+    log_request(
+        method=request.method,
+        path=request.url.path,
+        user_id=user_id,
+        request_data=request_data
+    )
     
     response = await call_next(request)
     process_time = time.time() - start_time
     
     # 记录响应信息
-    logger.info(f"✅ 响应状态: {response.status_code}, 处理时间: {process_time:.3f}s")
+    backend_logger.logger.info(f"✅ 响应状态: {response.status_code}, 处理时间: {process_time:.3f}s")
+    
+    # 记录响应日志
+    log_response(
+        status_code=response.status_code,
+        response_data={"process_time": f"{process_time:.3f}s"} if response.status_code < 400 else None,
+        error=str(response.status_code) if response.status_code >= 400 else None
+    )
     
     response.headers["X-Process-Time"] = str(process_time)
     return response
@@ -378,15 +560,11 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 
-# 健康检查端点
-@app.get("/health")
-async def health_check():
-    """健康检查端点"""
-    return {
-        "status": "healthy",
-        "message": "智诊通系统运行正常",
-        "version": "1.0.0"
-    }
+# 移除重复的健康检查端点（已在上方定义并包含详细检查）
+
+# 添加静态文件服务
+import os
+from pathlib import Path
 
 # 注册API路由
 # 认证路由直接注册到根路径
@@ -395,6 +573,13 @@ app.include_router(auth_router)
 
 # 其他API路由注册到 /api/v1 前缀
 app.include_router(api_router, prefix="/api/v1")
+
+# 确保上传目录存在
+upload_dir = Path(settings.UPLOAD_DIR)
+upload_dir.mkdir(parents=True, exist_ok=True)
+
+# 挂载静态文件服务（在API路由之后，避免冲突）
+app.mount("/api/v1/files", StaticFiles(directory=str(upload_dir)), name="files")
 
 
 # 开发模式下的调试信息
@@ -445,7 +630,7 @@ if __name__ == "__main__":
     
     print("🚀 启动智诊通系统...")
     uvicorn.run(
-        "main:app",
+        "app.main:app",
         host=settings.SERVER_HOST,
         port=settings.SERVER_PORT,
         reload=settings.DEBUG,

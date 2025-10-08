@@ -84,7 +84,7 @@ export const authApi = {
   /**
    * 用户注册
    */
-  async register(userData: RegisterRequest): Promise<ApiResponse<{ user: User; token: string }>> {
+  async register(userData: any): Promise<ApiResponse<{ user: User; token: string }>> {
     try {
       const response = await fetch('/auth/register', {
         method: 'POST',
@@ -105,17 +105,17 @@ export const authApi = {
         success: true,
         data: {
           user: {
-            id: data.id,
-            username: data.username,
-            email: data.email,
-            phone: data.phone,
-            avatar: data.avatar_url,
-            status: data.is_active ? 'active' : 'inactive',
+            id: data.user.id,
+            username: data.user.username,
+            email: data.user.email,
+            phone: data.user.phone,
+            avatar: data.user.avatar_url,
+            status: data.user.is_active ? 'active' : 'inactive',
             roles: ['user'], // 默认角色
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
+            createdAt: data.user.created_at,
+            updatedAt: data.user.updated_at,
           },
-          token: '', // 注册后没有token，需要用户登录
+          token: data.access_token, // 注册后自动登录，返回token
         },
         message: '注册成功',
         code: 200,
@@ -418,7 +418,8 @@ export const conversationApi = {
     // 确保数据格式符合后端期望的 SimpleMessageCreate 模型
     const payload = {
       content: message.content || message.message || message.text || '',
-      message_type: message.message_type || message.contentType || message.type || 'text',
+      content_type: message.content_type || message.messageType || message.contentType || message.type || 'text',
+      message_data: message.message_data || message.messageData || {},
     }
 
     console.log('🎯 发送流式消息 - 处理后消息内容:', payload)
@@ -512,6 +513,99 @@ export const conversationApi = {
   },
 
   /**
+   * 获取对话消息
+   */
+  async getConversationMessages(
+    conversationId: string, 
+    skip: number = 0, 
+    limit: number = 50
+  ): Promise<ApiResponse<any[]>> {
+    console.log('🎯 获取对话消息 - 对话ID:', conversationId)
+    console.log('🎯 获取对话消息 - 分页参数:', { skip, limit })
+
+    try {
+      const response = await get(`/conversations/${conversationId}/messages`, {
+        skip,
+        limit
+      })
+      console.log('🎯 获取对话消息 - 后端响应:', response)
+
+      // 后端直接返回消息数组，需要包装成前端期望的格式
+      const transformedResponse: ApiResponse<any[]> = {
+        success: true,
+        data: Array.isArray(response) ? response : [],
+        message: '获取对话消息成功',
+        code: 200,
+        timestamp: new Date().toISOString(),
+      }
+
+      return transformedResponse
+    } catch (error: any) {
+      console.error('🎯 获取对话消息 - 错误:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 获取对话历史
+   */
+  async getConversationHistory(
+    conversationId: string, 
+    limit: number = 50
+  ): Promise<ApiResponse<any>> {
+    console.log('🎯 获取对话历史 - 对话ID:', conversationId)
+    console.log('🎯 获取对话历史 - 限制数量:', limit)
+
+    try {
+      const response = await get(`/conversations/${conversationId}/history`, {
+        limit
+      })
+      console.log('🎯 获取对话历史 - 后端响应:', response)
+
+      // 后端直接返回历史数据，需要包装成前端期望的格式
+      const transformedResponse: ApiResponse<any> = {
+        success: true,
+        data: response,
+        message: '获取对话历史成功',
+        code: 200,
+        timestamp: new Date().toISOString(),
+      }
+
+      return transformedResponse
+    } catch (error: any) {
+      console.error('🎯 获取对话历史 - 错误:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 更新对话
+   */
+  async updateConversation(id: string, data: any): Promise<ApiResponse<any>> {
+    console.log('🎯 更新对话 - ID:', id, '数据:', data)
+
+    try {
+      const response = await put(`/conversations/${id}`, data)
+      console.log('🎯 更新对话 - 后端响应:', response)
+
+      // 后端直接返回对话数据，需要包装成前端期望的格式
+      const transformedResponse: ApiResponse<any> = {
+        success: true,
+        data: response,
+        message: '对话更新成功',
+        code: 200,
+        timestamp: new Date().toISOString(),
+      }
+
+      console.log('🎯 更新对话 - 转换后响应:', transformedResponse)
+      return transformedResponse
+    } catch (error) {
+      console.error('🎯 更新对话 - 错误:', error)
+      throw error
+    }
+  },
+
+  /**
    * 删除对话
    */
   async deleteConversation(id: string): Promise<ApiResponse<void>> {
@@ -537,6 +631,143 @@ export const conversationApi = {
       throw error
     }
   },
+}
+
+/**
+ * 多模态API
+ */
+export const multimodalApi = {
+  /**
+   * 统一多模态处理
+   */
+  async processUnified(data: {
+    text?: string;
+    imageFiles?: File[];
+    imageFile?: File;
+    audioFile?: File;
+  }): Promise<ApiResponse<any>> {
+    console.log('🎯 统一多模态处理:', {
+      hasText: !!data.text,
+      hasImage: !!(data.imageFile || (data.imageFiles && data.imageFiles.length > 0)),
+      hasAudio: !!data.audioFile
+    })
+    
+    try {
+      const formData = new FormData()
+      
+      if (data.text) {
+        formData.append('text', data.text)
+      }
+      
+      // 处理图片文件 - 只支持单个文件
+      if (data.imageFile) {
+        // 处理单个图片文件 - 使用image_file字段
+        formData.append('image_file', data.imageFile)
+      } else if (data.imageFiles && data.imageFiles.length > 0) {
+        // 如果有多个文件，只取第一个
+        formData.append('image_file', data.imageFiles[0])
+      }
+      
+      if (data.audioFile) {
+        formData.append('audio_file', data.audioFile)
+      }
+      
+      const response = await fetch('/api/v1/multimodal/unified', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_TOKEN) || '{}').value}`
+        },
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('统一多模态处理失败:', response.status, response.statusText, errorText)
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`)
+      }
+      
+      const result = await response.json()
+      console.log('🎯 统一多模态处理响应:', result)
+      
+      return {
+        success: true,
+        data: result,
+        message: '多模态处理成功',
+        code: 200,
+        timestamp: new Date().toISOString(),
+      }
+    } catch (error) {
+      console.error('🎯 统一多模态处理失败:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 处理文本输入（兼容旧接口）
+   */
+  async processText(text: string): Promise<ApiResponse<any>> {
+    return this.processUnified({ text })
+  },
+
+  /**
+   * 上传并处理图片（兼容旧接口）
+   */
+  async uploadImage(
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<ApiResponse<any>> {
+    return this.processUnified({ imageFile: file })
+  },
+
+  /**
+   * 上传并处理语音（兼容旧接口）
+   */
+  async uploadAudio(
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<ApiResponse<any>> {
+    return this.processUnified({ audioFile: file })
+  },
+
+  /**
+   * 多模态融合处理（兼容旧接口）
+   */
+  async processFusion(data: {
+    text?: string;
+    image_url?: string;
+    audio_url?: string;
+  }): Promise<ApiResponse<any>> {
+    console.log('🎯 多模态融合处理:', data)
+    
+    try {
+      const response = await fetch('/api/v1/multimodal/fusion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_TOKEN) || '{}').value}`
+        },
+        body: JSON.stringify(data)
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      console.log('🎯 多模态融合响应:', result)
+      
+      return {
+        success: true,
+        data: result,
+        message: '多模态融合处理成功',
+        code: 200,
+        timestamp: new Date().toISOString(),
+      }
+    } catch (error) {
+      console.error('🎯 多模态融合处理失败:', error)
+      throw error
+    }
+  }
 }
 
 /**

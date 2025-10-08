@@ -168,17 +168,8 @@ export function validatePassword(password: string): ValidationError | null {
   if (requiredError) return requiredError
 
   // 长度验证
-  const lengthError = validateStringLength(password, '密码', 8, 50)
+  const lengthError = validateStringLength(password, '密码', 6, 20)
   if (lengthError) return lengthError
-
-  // 强度验证
-  const strengthError = validateRegex(
-    password,
-    REGEX.PASSWORD,
-    '密码',
-    '密码必须包含大小写字母和数字，长度至少8位'
-  )
-  if (strengthError) return strengthError
 
   return null
 }

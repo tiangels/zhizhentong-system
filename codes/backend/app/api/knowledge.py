@@ -1,6 +1,6 @@
 """
 知识管理API路由
-处理知识库文档的增删改查和RAG系统管理
+处理知识库文档的增删改查和检索系统管理
 """
 
 from typing import List, Optional
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..auth import get_current_user
 from ..models.user import User
-from ..services.rag_service import get_rag_service
+from app.services.retrieval_service import get_retrieval_service
 import json
 import logging
 
@@ -17,17 +17,17 @@ router = APIRouter(prefix="/knowledge", tags=["知识管理"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("/status", summary="获取RAG服务状态")
-async def get_rag_status():
+@router.get("/status", summary="获取检索服务状态")
+async def get_retrieval_status():
     """
-    获取RAG服务的运行状态
+    获取检索服务的运行状态
     
     Returns:
-        RAG服务状态信息
+        检索服务状态信息
     """
     try:
-        rag_service = get_rag_service()
-        service_info = rag_service.get_service_info()
+        retrieval_service = get_retrieval_service()
+        service_info = retrieval_service.get_service_info()
         
         return {
             "status": "success",
@@ -35,7 +35,7 @@ async def get_rag_status():
         }
         
     except Exception as e:
-        logger.error(f"获取RAG服务状态失败: {e}")
+        logger.error(f"获取检索服务状态失败: {e}")
         return {
             "status": "error",
             "message": f"获取服务状态失败: {str(e)}"
@@ -48,7 +48,7 @@ async def add_knowledge_documents(
     current_user: User = Depends(get_current_user)
 ):
     """
-    添加知识文档到RAG系统
+    添加知识文档到检索系统
     
     - **documents**: 文档列表，每个文档包含title, content, source等字段
     
@@ -70,16 +70,16 @@ async def add_knowledge_documents(
                     detail="文档内容不能为空"
                 )
         
-        rag_service = get_rag_service()
+        retrieval_service = get_retrieval_service()
         
-        if not rag_service.is_available():
+        if not retrieval_service.is_available():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="RAG服务不可用"
+                detail="检索服务不可用"
             )
         
-        # 添加文档到RAG系统
-        success = await rag_service.add_knowledge_documents(documents)
+        # 添加文档到检索系统
+        success = await retrieval_service.add_knowledge_documents(documents)
         
         if success:
             return {
@@ -107,6 +107,7 @@ async def add_knowledge_documents(
 async def query_knowledge(
     question: str,
     top_k: int = Query(5, ge=1, le=20, description="返回文档数量"),
+    patient_unique_ids: Optional[list[str]] = None,
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -125,21 +126,26 @@ async def query_knowledge(
                 detail="查询问题不能为空"
             )
         
-        rag_service = get_rag_service()
+        retrieval_service = get_retrieval_service()
         
-        if not rag_service.is_available():
+        if not retrieval_service.is_available():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="RAG服务不可用"
+                detail="检索服务不可用"
             )
         
-        # 查询知识库
-        result = await rag_service.query_knowledge(question, top_k=top_k)
+        # 查询知识库，传入用户与患者过滤条件（后端检索服务将据此做过滤）
+        result = await retrieval_service.generate_response(
+            user_message=question,
+            top_k=top_k,
+            user_id=current_user.id,
+            patient_unique_ids=patient_unique_ids or None,
+        )
         
         if result.get('success'):
             return {
                 "status": "success",
-                "data": result.get('result', {})
+                "data": result
             }
         else:
             raise HTTPException(
@@ -207,16 +213,16 @@ async def upload_knowledge_file(
                     detail=f"第{i+1}个文档缺少content字段"
                 )
         
-        rag_service = get_rag_service()
+        retrieval_service = get_retrieval_service()
         
-        if not rag_service.is_available():
+        if not retrieval_service.is_available():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="RAG服务不可用"
+                detail="检索服务不可用"
             )
         
-        # 添加文档到RAG系统
-        success = await rag_service.add_knowledge_documents(documents)
+        # 添加文档到检索系统
+        success = await retrieval_service.add_knowledge_documents(documents)
         
         if success:
             return {
@@ -241,13 +247,13 @@ async def upload_knowledge_file(
         )
 
 
-@router.get("/test", summary="测试RAG服务")
-async def test_rag_service(
+@router.get("/test", summary="测试检索服务")
+async def test_retrieval_service(
     question: str = Query("什么是感冒？", description="测试问题"),
     current_user: User = Depends(get_current_user)
 ):
     """
-    测试RAG服务功能
+    测试检索服务功能
     
     - **question**: 测试问题
     
@@ -255,33 +261,33 @@ async def test_rag_service(
         测试结果
     """
     try:
-        rag_service = get_rag_service()
+        retrieval_service = get_retrieval_service()
         
-        if not rag_service.is_available():
+        if not retrieval_service.is_available():
             return {
                 "status": "error",
-                "message": "RAG服务不可用",
-                "service_info": rag_service.get_service_info()
+                "message": "检索服务不可用",
+                "service_info": retrieval_service.get_service_info()
             }
         
         # 测试查询
-        result = await rag_service.query_knowledge(question, top_k=3)
+        result = await retrieval_service.query_knowledge(question, top_k=3)
         
         # 测试对话生成
-        chat_result = await rag_service.generate_response(question)
+        chat_result = await retrieval_service.generate_response(question)
         
         return {
             "status": "success",
-            "message": "RAG服务测试完成",
-            "service_info": rag_service.get_service_info(),
+            "message": "检索服务测试完成",
+            "service_info": retrieval_service.get_service_info(),
             "query_test": result,
             "chat_test": chat_result
         }
         
     except Exception as e:
-        logger.error(f"测试RAG服务失败: {e}")
+        logger.error(f"测试检索服务失败: {e}")
         return {
             "status": "error",
             "message": f"测试失败: {str(e)}",
-            "service_info": get_rag_service().get_service_info() if get_rag_service() else None
+            "service_info": get_retrieval_service().get_service_info() if get_retrieval_service() else None
         }

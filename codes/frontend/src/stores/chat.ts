@@ -156,13 +156,13 @@ const saveCurrentConversationId = (conversationId: string | null) => {
 export const useChatStore = defineStore('chat', () => {
   // ==================== 状态变量 ====================
 
-  // 对话列表
+  // 对话列表 - 初始化时从本地存储加载
   const conversations = ref<Conversation[]>([])
 
   // 当前对话
   const currentConversation = ref<Conversation | null>(null)
 
-  // 所有消息
+  // 所有消息 - 初始化时从本地存储加载
   const messages = ref<Message[]>([])
 
   // 确保 conversations 始终是数组的辅助函数
@@ -208,9 +208,26 @@ export const useChatStore = defineStore('chat', () => {
   // ==================== 初始化方法 ====================
 
   /**
+   * 更新对话的lastMessage为最后一条用户消息
+   */
+  const updateConversationLastMessage = (conversationId: string) => {
+    const conversation = conversations.value.find(c => c.id === conversationId)
+    if (!conversation) return
+
+    const lastUserMessage = messages.value
+      .filter(m => m.conversationId === conversationId && m.type === 'user')
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
+    
+    if (lastUserMessage) {
+      conversation.lastMessage = lastUserMessage.content
+      conversation.lastMessageAt = lastUserMessage.timestamp
+    }
+  }
+
+  /**
    * 初始化用户数据
    */
-  const initializeUserData = () => {
+  const initializeUserData = async () => {
     const authStore = useAuthStore()
     console.log('Chat Store: 初始化用户数据')
 
@@ -220,13 +237,77 @@ export const useChatStore = defineStore('chat', () => {
       return
     }
 
-    // 加载用户专用的对话和消息数据
-    const loadedConversations = loadConversationsFromStorage()
-    const loadedMessages = loadMessagesFromStorage()
+    // 首先确保从本地存储加载数据（页面刷新后的快速恢复）
+    console.log('Chat Store: 从本地存储加载数据')
+    const localConversations = loadConversationsFromStorage()
+    const localMessages = loadMessagesFromStorage()
+    
+    if (localConversations.length > 0 || localMessages.length > 0) {
+      conversations.value = localConversations
+      messages.value = localMessages
+      console.log(
+        `Chat Store: 从本地存储加载了 ${localConversations.length} 个对话, ${localMessages.length} 条消息`
+      )
 
-    // 确保始终是数组
-    conversations.value = Array.isArray(loadedConversations) ? loadedConversations : []
-    messages.value = Array.isArray(loadedMessages) ? loadedMessages : []
+      // 更新每个对话的lastMessage
+      conversations.value.forEach(conversation => {
+        updateConversationLastMessage(conversation.id)
+      })
+    }
+
+    try {
+      // 然后从后端同步最新数据
+      console.log('Chat Store: 开始从后端同步对话列表')
+      const conversationsResponse = await conversationApi.getConversations()
+      
+      if (conversationsResponse.success && conversationsResponse.data) {
+        console.log('Chat Store: 后端对话数据:', conversationsResponse.data)
+
+        // 转换后端数据格式为前端格式
+        const backendConversations = conversationsResponse.data.map((conv: any) => ({
+          id: conv.id,
+          userId: conv.user_id,
+          title: conv.title,
+          type: conv.conversation_type || 'general',
+          status: conv.status || 'active',
+          messageCount: conv.message_count || 0,
+          lastMessage: '',
+          lastMessageAt: conv.updated_at,
+          createdAt: conv.created_at,
+          updatedAt: conv.updated_at,
+        }))
+        
+        conversations.value = backendConversations
+        console.log(`Chat Store: 从后端同步了 ${backendConversations.length} 个对话`)
+
+        // 保存到本地存储
+        saveConversationsToStorage(conversations.value)
+
+        // 只更新对话的lastMessage，不加载所有消息
+        console.log('Chat Store: 更新对话最后消息')
+        for (const conversation of backendConversations) {
+          updateConversationLastMessage(conversation.id)
+        }
+      } else {
+        console.log('Chat Store: 后端同步失败，使用本地数据')
+        // 如果后端同步失败，确保本地数据已加载
+        if (conversations.value.length === 0) {
+          conversations.value = localConversations
+        }
+        if (messages.value.length === 0) {
+          messages.value = localMessages
+        }
+      }
+    } catch (syncError) {
+      console.error('Chat Store: 后端同步失败，使用本地数据:', syncError)
+      // 如果后端同步失败，确保本地数据已加载
+      if (conversations.value.length === 0) {
+        conversations.value = localConversations
+      }
+      if (messages.value.length === 0) {
+        messages.value = localMessages
+      }
+    }
 
     // 双重检查确保数组状态
     ensureConversationsArray()
@@ -250,6 +331,51 @@ export const useChatStore = defineStore('chat', () => {
     console.log(
       `Chat Store: 用户数据初始化完成 - ${conversations.value.length} 个对话, ${messages.value.length} 条消息`
     )
+  }
+
+  /**
+   * 同步对话消息
+   */
+  const syncConversationMessages = async (conversationId: string) => {
+    try {
+      console.log(`Chat Store: 同步对话消息 - 对话ID: ${conversationId}`)
+      
+      // 获取对话消息
+      const messagesResponse = await conversationApi.getConversationMessages(conversationId, 0, 100)
+      
+      if (messagesResponse.success && messagesResponse.data) {
+        console.log(`Chat Store: 获取到 ${messagesResponse.data.length} 条消息`)
+        
+        // 转换后端消息格式为前端格式
+        const backendMessages = messagesResponse.data.map((msg: any) => ({
+          id: msg.id,
+          conversationId: msg.conversation_id,
+          type: (msg.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+          contentType: (msg.content_type || 'text') as 'text' | 'image' | 'audio' | 'video' | 'file',
+          content: msg.content,
+          messageData: {
+            content_type: msg.content_type || 'text',
+            ...(msg.message_data || {}),
+          },
+          timestamp: msg.created_at,
+          status: 'sent' as 'sending' | 'sent' | 'failed',
+          createdAt: msg.created_at,
+          updatedAt: msg.updated_at || msg.created_at,
+        }))
+        
+        // 过滤掉已存在的消息，避免重复
+        const existingMessageIds = messages.value.map(m => m.id)
+        const newMessages = backendMessages.filter(msg => !existingMessageIds.includes(msg.id))
+        
+        if (newMessages.length > 0) {
+          messages.value.push(...newMessages)
+          saveMessagesToStorage(messages.value)
+          console.log(`Chat Store: 添加了 ${newMessages.length} 条新消息`)
+        }
+      }
+    } catch (syncError) {
+      console.error(`Chat Store: 同步对话消息失败 - 对话ID: ${conversationId}`, syncError)
+    }
   }
 
   /**
@@ -358,6 +484,13 @@ export const useChatStore = defineStore('chat', () => {
     try {
       isLoading.value = true
 
+      // 调用后端API删除对话
+      const response = await conversationApi.deleteConversation(conversationId)
+      
+      if (!response.success) {
+        throw new Error('删除对话失败')
+      }
+
       // 删除对话
       conversations.value = conversations.value.filter(c => c.id !== conversationId)
 
@@ -378,6 +511,7 @@ export const useChatStore = defineStore('chat', () => {
     } catch (err) {
       console.error('删除对话失败:', err)
       error.value = err instanceof Error ? err.message : '删除对话失败'
+      throw err // 重新抛出错误，让调用方处理
     } finally {
       isLoading.value = false
     }
@@ -387,12 +521,25 @@ export const useChatStore = defineStore('chat', () => {
    * 更新对话标题
    */
   const updateConversationTitle = async (conversationId: string, title: string) => {
-    const conversation = conversations.value.find(c => c.id === conversationId)
-    if (conversation) {
-      conversation.title = title
-      conversation.updatedAt = new Date().toISOString()
-      saveConversationsToStorage(conversations.value)
-      console.log('更新对话标题:', title)
+    try {
+      // 调用后端API更新标题
+      const response = await conversationApi.updateConversation(conversationId, { title })
+      
+      if (!response.success) {
+        throw new Error('更新标题失败')
+      }
+
+      // 更新本地状态
+      const conversation = conversations.value.find(c => c.id === conversationId)
+      if (conversation) {
+        conversation.title = title
+        conversation.updatedAt = new Date().toISOString()
+        saveConversationsToStorage(conversations.value)
+        console.log('✅ 更新对话标题成功:', title)
+      }
+    } catch (error) {
+      console.error('❌ 更新对话标题失败:', error)
+      throw error // 重新抛出错误，让调用方处理
     }
   }
 
@@ -417,8 +564,9 @@ export const useChatStore = defineStore('chat', () => {
         id: generateUUID(),
         conversationId: currentConversation.value.id,
         type: 'user',
-        contentType: 'text',
+        contentType: request.contentType || 'text',
         content: request.content,
+        messageData: request.messageData,
         timestamp: new Date().toISOString(),
         status: 'sent',
         createdAt: new Date().toISOString(),
@@ -489,9 +637,15 @@ export const useChatStore = defineStore('chat', () => {
           messages.value.push(aiMessage)
           saveMessagesToStorage(messages.value)
 
-          // 更新对话信息
-          currentConversation.value.lastMessage = aiMessage.content
-          currentConversation.value.lastMessageAt = aiMessage.timestamp
+          // 更新对话信息 - 保持显示用户最后一条消息
+          const lastUserMessage = messages.value
+            .filter(m => m.conversationId === currentConversation.value?.id && m.type === 'user')
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
+          
+          if (lastUserMessage) {
+            currentConversation.value.lastMessage = lastUserMessage.content
+            currentConversation.value.lastMessageAt = lastUserMessage.timestamp
+          }
           currentConversation.value.messageCount = messages.value.filter(
             m => m.conversationId === currentConversation.value?.id
           ).length
@@ -530,6 +684,54 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
+   * 打字机效果 - 逐字显示文本，模拟医生边思考边回复的自然感
+   */
+  const typewriterEffect = async (
+    targetMessage: Message,
+    fullContent: string,
+    baseSpeed: number = 60
+  ) => {
+    const messageIndex = messages.value.findIndex(m => m.id === targetMessage.id)
+    if (messageIndex === -1) return
+
+    let currentContent = ''
+    const characters = fullContent.split('')
+    
+    for (let i = 0; i < characters.length; i++) {
+      currentContent += characters[i]
+      targetMessage.content = currentContent
+      targetMessage.updatedAt = new Date().toISOString()
+      
+      // 强制触发Vue响应式更新
+      messages.value[messageIndex] = { ...targetMessage }
+      saveMessagesToStorage(messages.value)
+      
+      // 根据字符类型调整显示速度，模拟自然思考停顿
+      let delay = baseSpeed
+      const char = characters[i]
+      
+      if (char === '。' || char === '！' || char === '？') {
+        // 句号、感叹号、问号后停顿150ms，模拟思考
+        delay = 150
+      } else if (char === '，' || char === '；' || char === '：') {
+        // 逗号、分号、冒号后停顿100ms
+        delay = 100
+      } else if (char === ' ' || char === '\n') {
+        // 空格和换行停顿80ms
+        delay = 80
+      } else if (/[a-zA-Z0-9]/.test(char)) {
+        // 英文字母和数字稍快一些
+        delay = baseSpeed * 0.8
+      } else {
+        // 中文字符使用基础速度
+        delay = baseSpeed
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+
+  /**
    * 发送消息（流式）
    */
   const sendMessageStream = async (request: SendMessageRequest): Promise<Message | null> => {
@@ -555,8 +757,9 @@ export const useChatStore = defineStore('chat', () => {
         id: generateUUID(),
         conversationId: currentConversation.value.id,
         type: 'user',
-        contentType: 'text',
+        contentType: request.contentType || 'text',
         content: request.content,
+        messageData: request.messageData,
         timestamp: new Date().toISOString(),
         status: 'sent',
         createdAt: new Date().toISOString(),
@@ -612,12 +815,17 @@ export const useChatStore = defineStore('chat', () => {
       messages.value.push(aiMessage)
       saveMessagesToStorage(messages.value)
 
+      // 存储完整内容用于打字机效果
+      let fullContent = ''
+
       // 调用流式API
       try {
         await conversationApi.sendMessageStream(
           currentConversation.value.id,
           {
             content: request.content,
+            content_type: request.messageType || 'text',
+            message_data: request.messageData || {},
           },
           (data) => {
             console.log('收到流式数据:', data)
@@ -626,51 +834,75 @@ export const useChatStore = defineStore('chat', () => {
               case 'start':
                 console.log('开始生成回复...')
                 break
+              case 'progress':
+                // 处理进度信息
+                console.log('进度更新:', data.message)
+                break
+              case 'warning':
+                // 处理警告信息
+                console.warn('警告:', data.message)
+                break
               case 'content':
-                // 更新AI消息内容 - 优先使用full_content，否则追加content
+                // 累积完整内容
                 if (data.full_content !== undefined) {
-                  aiMessage.content = data.full_content
+                  fullContent = data.full_content
                 } else if (data.content !== undefined) {
-                  // 追加新的内容片段
-                  aiMessage.content += data.content
+                  fullContent += data.content
                 }
-                aiMessage.updatedAt = new Date().toISOString()
-                saveMessagesToStorage(messages.value)
+                break
+              case 'answer':
+                // 处理最终答案
+                if (data.content !== undefined) {
+                  fullContent = data.content
+                }
+                console.log('收到最终答案:', data.content)
                 break
               case 'done':
                 console.log('回复生成完成')
-                aiMessage.status = 'sent'
-                aiMessage.updatedAt = new Date().toISOString()
-                saveMessagesToStorage(messages.value)
                 break
               case 'final':
                 // 使用最终内容
-                aiMessage.content = data.full_content || aiMessage.content
-                aiMessage.status = 'sent'
-                aiMessage.updatedAt = new Date().toISOString()
-                saveMessagesToStorage(messages.value)
+                fullContent = data.full_content || fullContent
                 break
               case 'error':
                 console.error('流式生成错误:', data.message)
-                aiMessage.content = '抱歉，生成回复时出现错误。'
-                aiMessage.status = 'error'
-                aiMessage.updatedAt = new Date().toISOString()
-                saveMessagesToStorage(messages.value)
+                fullContent = '抱歉，生成回复时出现错误。'
                 break
             }
           },
           (error) => {
             console.error('流式API错误:', error)
-            aiMessage.content = '抱歉，无法获取回复。'
-            aiMessage.status = 'error'
-            aiMessage.updatedAt = new Date().toISOString()
-            saveMessagesToStorage(messages.value)
+            fullContent = '抱歉，无法获取回复。'
           },
-          () => {
-            console.log('流式生成完成')
-            // 更新对话信息
-            currentConversation.value!.lastMessage = aiMessage.content
-            currentConversation.value!.lastMessageAt = aiMessage.timestamp
+          async () => {
+            console.log('流式生成完成，开始打字机效果')
+            
+            // 开始打字机效果 - 模拟医生边思考边回复的自然感
+            if (fullContent) {
+              await typewriterEffect(aiMessage, fullContent, 60) // 60ms基础速度，标点处会延长
+            }
+            
+            // 更新消息状态
+            aiMessage.status = 'sent'
+            aiMessage.updatedAt = new Date().toISOString()
+            
+            // 强制触发Vue响应式更新
+            const messageIndex = messages.value.findIndex(m => m.id === aiMessage.id)
+            if (messageIndex !== -1) {
+              messages.value[messageIndex] = { ...aiMessage }
+            }
+            
+            saveMessagesToStorage(messages.value)
+            
+            // 更新对话信息 - 保持显示用户最后一条消息
+            const lastUserMessage = messages.value
+              .filter(m => m.conversationId === currentConversation.value?.id && m.type === 'user')
+              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
+            
+            if (lastUserMessage) {
+              currentConversation.value!.lastMessage = lastUserMessage.content
+              currentConversation.value!.lastMessageAt = lastUserMessage.timestamp
+            }
             currentConversation.value!.messageCount = messages.value.filter(
               m => m.conversationId === currentConversation.value?.id
             ).length
@@ -710,7 +942,7 @@ export const useChatStore = defineStore('chat', () => {
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000))
 
       // 生成专业的医疗AI回复
-      const mockContent = generateMedicalReply(userContent)
+      const mockContent = `作为医疗AI助手，我理解您的问题："${userContent}"。请注意，我不能提供具体的医疗诊断或治疗建议。如果您有健康问题，请咨询专业医生。`
 
       // 创建AI回复消息
       const aiMessage: Message = {
@@ -750,8 +982,15 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
 
-      currentConversation.value.lastMessage = aiMessage.content
-      currentConversation.value.lastMessageAt = aiMessage.timestamp
+      // 更新对话信息 - 保持显示用户最后一条消息
+      const lastUserMessage = messages.value
+        .filter(m => m.conversationId === currentConversation.value?.id && m.type === 'user')
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
+      
+      if (lastUserMessage) {
+        currentConversation.value.lastMessage = lastUserMessage.content
+        currentConversation.value.lastMessageAt = lastUserMessage.timestamp
+      }
       currentConversation.value.messageCount = messages.value.filter(
         m => m.conversationId === currentConversation.value?.id
       ).length
@@ -903,6 +1142,24 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /**
+   * 更新消息数据
+   */
+  const updateMessage = (messageId: string, updates: Partial<Message>) => {
+    const messageIndex = messages.value.findIndex(msg => msg.id === messageId)
+    if (messageIndex !== -1) {
+      messages.value[messageIndex] = {
+        ...messages.value[messageIndex],
+        ...updates,
+        updatedAt: new Date().toISOString()
+      }
+      saveMessagesToStorage(messages.value)
+      console.log('消息已更新:', messageId, updates)
+    } else {
+      console.warn('未找到要更新的消息:', messageId)
+    }
+  }
+
   // ==================== 返回Store接口 ====================
 
   return {
@@ -919,6 +1176,7 @@ export const useChatStore = defineStore('chat', () => {
     // 初始化方法
     initializeUserData,
     clearUserData,
+    syncConversationMessages,
 
     // 对话管理
     createConversation,
@@ -933,6 +1191,7 @@ export const useChatStore = defineStore('chat', () => {
     resendMessage,
     deleteMessage,
     getConversationMessages,
+    updateMessage,
 
     // 实时通信
     setTyping,

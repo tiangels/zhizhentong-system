@@ -10,32 +10,35 @@
 
 ## ✨ 主要特性
 
-- 🧠 **智能问诊**: AI驱动的症状分析和医疗建议
+- 🧠 **智能问诊**: AI 驱动的症状分析和医疗建议
 - 🎯 **多模态输入**: 支持文本、语音、图像输入
-- 💬 **实时对话**: WebSocket实现流畅的对话体验
+- 💬 **实时对话**: WebSocket 实现流畅的对话体验
 - 🔐 **用户认证**: 完整的注册登录和权限管理
 - 📱 **响应式设计**: 适配桌面端和移动端
 - 🚀 **微服务架构**: 模块化设计，易于扩展
 - 📊 **实时监控**: 系统状态和性能监控
-- 🐳 **容器化部署**: Docker支持一键部署
+- 🐳 **容器化部署**: Docker 支持一键部署
 
 ## 🏗️ 技术架构
 
 ### 技术栈
 
 **后端**:
+
 - Python 3.8+ + FastAPI + SQLAlchemy
 - SQLite/PostgreSQL + Redis + Milvus
-- JWT认证 + Swagger文档
+- JWT 认证 + Swagger 文档
 
 **前端**:
+
 - Vue 3 + TypeScript + Vite
 - Pinia + Vue Router + Ant Design Vue
 - Axios + Less
 
 **部署**:
+
 - Docker + Docker Compose
-- Nginx + SSL证书
+- Nginx + SSL 证书
 
 ### 系统架构图
 
@@ -97,6 +100,7 @@ chmod +x start-all.sh
 ### 方式二：分步启动
 
 #### 启动后端服务
+
 ```bash
 cd codes/backend
 chmod +x start-dev.sh
@@ -104,20 +108,22 @@ chmod +x start-dev.sh
 ```
 
 #### 启动前端服务
+
 ```bash
 cd codes/frontend
 chmod +x start-dev.sh
 ./start-dev.sh
 ```
 
-#### 启动RAG检索服务
+#### 启动 RAG 检索服务
+
 ```bash
 cd codes/services/knowledge_retrieval_service
 chmod +x quick_start.sh
 ./quick_start.sh
 ```
 
-### 方式三：Docker启动
+### 方式三：Docker 启动
 
 ```bash
 # 启动基础服务
@@ -135,9 +141,9 @@ docker-compose ps
 ### 访问系统
 
 - 🌐 **前端界面**: http://localhost:8080
-- 🔧 **后端API**: http://localhost:8000
-- 🤖 **RAG服务**: http://localhost:8000 (RAG服务)
-- 📚 **API文档**: http://localhost:8000/docs
+- 🔧 **后端 API**: http://localhost:8000
+- 🤖 **RAG 服务**: http://localhost:8000 (RAG 服务)
+- 📚 **API 文档**: http://localhost:8000/docs
 - ❤️ **健康检查**: http://localhost:8000/health
 - 📊 **系统状态**: 运行 `./status.sh` 查看
 
@@ -190,15 +196,15 @@ zhi_zhen_tong_system/
 │   │   ├── multi_model_processing_service/ # 多模态处理服务
 │   │   └── session_management_service/ # 会话管理服务
 │   │
-│   ├── chroma_db/                # 向量数据库 ⭐
-│   │   ├── chroma.sqlite3        # 数据库文件
-│   │   └── [collection_id]/      # 集合数据
-│   │
 │   ├── start-all.sh              # 一键启动脚本
 │   ├── status.sh                 # 状态检查脚本
 │   └── stop-all.sh               # 停止服务脚本
 │
 ├── datas/                        # 数据目录 ⭐
+│   ├── chroma_db/                # 向量数据库 ⭐
+│   │   ├── text/                 # 文本向量数据库
+│   │   ├── image/                # 图像向量数据库
+│   │   └── multimodal/           # 多模态向量数据库
 │   ├── medical_knowledge/        # 医疗知识库
 │   │   ├── text_data/            # 文本数据
 │   │   ├── image_text_data/      # 图像文本数据
@@ -223,36 +229,42 @@ zhi_zhen_tong_system/
 ## 📖 核心功能
 
 ### 1. 智能问诊系统
+
 - **症状描述**: 用户可描述身体不适症状
-- **智能分析**: 基于Medical_Qwen3_17B的AI分析
+- **智能分析**: 基于 Medical_Qwen3_17B 的 AI 分析
 - **建议推荐**: 给出治疗建议和注意事项
 - **紧急提醒**: 识别紧急情况并提醒就医
 
-### 2. RAG检索增强系统 ⭐
+### 2. RAG 检索增强系统 ⭐
+
 - **知识检索**: 基于向量相似度的语义搜索
 - **多模态支持**: 文本、图像、语音数据的统一处理
 - **跨模态检索**: 图像查询返回相关文本，文本查询支持图像结果
 - **智能生成**: 基于检索结果生成回答
 
 ### 3. 多模态输入处理
+
 - **文本输入**: 支持中文症状描述
 - **语音输入**: 语音转文字功能
 - **图像输入**: 皮肤、伤口等图像识别
 - **混合输入**: 多种输入方式组合使用
 
 ### 4. 向量化知识库 ⭐
-- **文档处理**: 支持Word、PDF、TXT、Excel等格式
+
+- **文档处理**: 支持 Word、PDF、TXT、Excel 等格式
 - **智能切分**: 医疗文档的结构化切分
-- **向量化**: 基于text2vec-base-chinese的文本向量化
+- **向量化**: 基于 text2vec-base-chinese 的文本向量化
 - **索引构建**: 高效的向量数据库索引
 
 ### 5. 用户管理系统
+
 - **用户注册**: 支持邮箱和手机号注册
-- **身份验证**: JWT token认证机制
+- **身份验证**: JWT token 认证机制
 - **会话管理**: 多设备登录支持
 - **隐私保护**: 数据加密和访问控制
 
 ### 6. 对话管理系统
+
 - **历史记录**: 保存所有问诊对话
 - **上下文理解**: 连续对话的上下文保持
 - **多轮对话**: 支持追问和澄清
@@ -310,9 +322,9 @@ npm run test
 
 - 📖 [项目启动指南](./项目启动指南.md) - 详细的启动流程说明
 - 🏗️ [系统架构与功能说明](./系统架构与功能说明.md) - 完整的架构文档
-- 🤖 [RAG检索增强系统完整说明文档](./codes/services/knowledge_retrieval_service/智诊通RAG检索增强系统完整说明文档.md) - RAG系统详细文档
+- 🤖 [RAG 检索增强系统完整说明文档](./codes/services/knowledge_retrieval_service/智诊通RAG检索增强系统完整说明文档.md) - RAG 系统详细文档
 - 🧠 [多模态向量化系统完整说明文档](./codes/ai_models/embedding_models/智诊通多模态向量化系统完整说明文档.md) - 向量化系统详细文档
-- 📋 [API文档](http://localhost:8000/docs) - Swagger自动生成的API文档
+- 📋 [API 文档](http://localhost:8000/docs) - Swagger 自动生成的 API 文档
 - 🎯 [开发规范](./docs/) - 代码规范和开发指南
 - 📊 [系统状态报告](./SYSTEM_STATUS.md) - 当前系统运行状态
 

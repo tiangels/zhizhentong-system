@@ -1,0 +1,151 @@
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:14-alpine
+    container_name: zhizhentong_postgres
+    environment:
+      POSTGRES_DB: zhizhentong
+      POSTGRES_USER: zhizhentong
+      POSTGRES_PASSWORD: zhizhentong123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zhizhentong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存服务
+  redis:
+    image: redis:6-alpine
+    container_name: zhizhentong_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch 搜索引擎服务
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: zhizhentong_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Kibana 可视化服务（可选）
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: zhizhentong_kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # RabbitMQ 消息队列服务
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: zhizhentong_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: zhizhentong
+      RABBITMQ_DEFAULT_PASS: zhizhentong123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - zhizhentong_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 智诊通多模态向量化服务 - 已移除Docker部署，使用本地启动
+
+  # ChromaDB向量数据库
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: zhizhentong_chromadb
+    restart: unless-stopped
+    ports:
+      - "8003:8000"  # ChromaDB默认端口
+    volumes:
+      - chromadb_data:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+    networks:
+      - zhizhentong_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # 后端API服务 - 已移除Docker部署，使用本地启动
+
+  # Nginx反向代理（可选）- 已移除，因为backend和embedding使用本地启动
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
+  rabbitmq_data:
+  chromadb_data:
+
+networks:
+  zhizhentong_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

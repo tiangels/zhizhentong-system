@@ -24,12 +24,14 @@ class AudioProcessor:
             "最近总是失眠，而且很焦虑"
         ]
     
-    def process_audio(self, audio_data: bytes) -> Dict[str, Any]:
+    def process_audio(self, audio_data: str, audio_format: str = None, processing_type: str = None) -> Dict[str, Any]:
         """
         处理音频输入
         
         Args:
-            audio_data: 音频数据
+            audio_data: 音频数据（base64编码的字符串）
+            audio_format: 音频格式
+            processing_type: 处理类型
             
         Returns:
             Dict[str, Any]: 处理结果
@@ -37,8 +39,12 @@ class AudioProcessor:
         start_time = time.time()
         self.stats['total_processed'] += 1
         
+        # 解码base64音频数据
+        import base64
+        audio_bytes = base64.b64decode(audio_data)
+        
         # 音频预处理
-        processed_audio = self._preprocess_audio(audio_data)
+        processed_audio = self._preprocess_audio(audio_bytes)
         
         # 语音识别（模拟）
         transcription = self._speech_to_text(processed_audio)
